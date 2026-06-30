@@ -1,0 +1,707 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ציר הזמן של השיעור — משחק חינוכי</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Alef:wght@400;700&family=Rubik:wght@400;500;700;900&family=Suez+One&family=Secular+One&display=swap" rel="stylesheet">
+<style>
+  /* ============================================================
+     🎛️  כוונון מהיר — אם משהו נחתך, הקטינו את הערכים האלה
+     ------------------------------------------------------------
+     --fall-w   : רוחב הקלף הצונח הגדול
+     --fall-img : גובה האיור בקלף הצונח
+     --tl-img-h : גובה האיור בקלף שעל ציר הזמן (הקטן)
+     --tl-card-w: רוחב הקלף שעל הציר
+     לשינוי מספר/צורת שורות הנחש — ראו const ROWS ב-JavaScript.
+     ============================================================ */
+  :root{
+    --fall-w:    clamp(230px, 21vw, 320px);
+    --fall-img:  clamp(120px, 18vh, 195px);
+    --tl-img-h:  clamp(48px, 7.2vh, 84px);
+    --tl-card-w: clamp(92px, 9vw, 134px);
+
+    --orange:#ff7a18; --yellow:#ffc233; --pink:#ff3d77; --purple:#7b2ff7;
+    --blue:#1f8fff;  --green:#22c55e;   --green-d:#138a37; --red:#ff3b3b;
+    --ink:#241046;   --card-bg:#fffdf6;
+
+    /* גווני עץ ל"הרפתקה ידנית" */
+    --wood-dark:#3a1e0a; --wood:#8a4f22; --wood-lite:#b3712f;
+  }
+
+  *{ box-sizing:border-box; }
+  html,body{ height:100%; margin:0; overflow:hidden; }
+
+  body{
+    font-family:'Rubik',system-ui,sans-serif;
+    color:var(--ink);
+    background-color:#bfe3f5;
+    background-size:cover; background-position:center;
+    background-repeat:no-repeat; background-attachment:fixed;
+  }
+
+  .game{ height:100vh; height:100dvh; display:flex; flex-direction:column; }
+
+  /* ===================== טיפול טקסט "גיימי" ===================== */
+  .game-text{
+    font-family:'Rubik','Suez One',sans-serif; font-weight:900;
+    color:#ffd24d;
+    -webkit-text-stroke:3px var(--wood-dark);
+    paint-order:stroke fill;
+    text-shadow:0 3px 0 #6b3d12, 0 4px 7px rgba(0,0,0,.4);
+    letter-spacing:.3px;
+  }
+
+  /* ===================== HUD ===================== */
+  .hud{
+    flex:0 0 auto;
+    display:flex; align-items:center; gap:14px;
+    padding:7px 20px;
+    background:linear-gradient(180deg, rgba(36,16,70,.92), rgba(36,16,70,.72));
+    border-bottom:4px solid rgba(255,194,51,.75);
+    box-shadow:0 4px 20px rgba(0,0,0,.45);
+  }
+
+  /* תוספת א — לוגו שלט-עץ תלוי */
+  .logo{
+    position:relative; flex:0 0 auto;
+    padding:7px 24px 9px; margin-top:4px;
+    border-radius:16px; border:4px solid var(--wood-dark);
+    background:
+      repeating-linear-gradient(90deg, rgba(0,0,0,.07) 0 6px, rgba(255,255,255,.05) 6px 12px),
+      linear-gradient(180deg,#a9682f,#8a4f22 58%,#6e3d18);
+    box-shadow:0 7px 0 #2c1505, 0 12px 22px rgba(0,0,0,.55), inset 0 2px 0 rgba(255,255,255,.28);
+    transform:rotate(-1.4deg);
+  }
+  .logo::before, .logo::after{   /* שני "ברגים" בפינות */
+    content:""; position:absolute; top:6px; width:11px; height:11px; border-radius:50%;
+    background:radial-gradient(circle at 35% 30%, #fff, #c4c4c4 42%, #6b6b6b 76%, #333);
+    box-shadow:0 1px 2px rgba(0,0,0,.7);
+  }
+  .logo::before{ right:9px; } .logo::after{ left:9px; }
+  .logo-text{
+    display:inline-block;
+    font-family:'Rubik','Suez One',sans-serif; font-weight:900; letter-spacing:.4px;
+    font-size:clamp(1rem,1.95vw,1.85rem);
+    /* מילוי מלא ובהיר מאוד (קרם/לבן-חם) — זהה ל-game2 */
+    color:#fff5d8;
+    -webkit-text-stroke:3.8px #20100a;   /* מתאר כהה עבה */
+    paint-order:stroke fill;
+    /* עומק תלת-ממדי: שכבות צל קשיחות מדורגות (1→5px) באותו חום-כהה + צל רך אחד מתחת */
+    text-shadow:
+      0 1px 0 #2c1505,
+      0 2px 0 #2c1505,
+      0 3px 0 #2c1505,
+      0 4px 0 #2c1505,
+      0 5px 0 #2c1505,
+      0 7px 10px rgba(0,0,0,.55);
+  }
+
+  .counter{
+    flex:1 1 auto; text-align:center;
+    font-family:'Rubik',sans-serif; font-weight:900;
+    color:#ffe9b0; font-size:clamp(.95rem,1.5vw,1.35rem);
+    -webkit-text-stroke:2px var(--wood-dark); paint-order:stroke fill;
+    text-shadow:0 2px 0 #4a2a10;
+  }
+  .counter b{ color:#fff; }
+
+  /* ===================== כפתורים — לוחיות עץ ===================== */
+  .btns{ display:flex; gap:9px; flex:0 0 auto; }
+  .btn3d{
+    font-family:'Rubik',sans-serif; font-weight:900;
+    font-size:clamp(.78rem,1.05vw,1rem);
+    color:#fff; -webkit-text-stroke:1.8px var(--wood-dark); paint-order:stroke fill;
+    text-shadow:0 2px 0 #2c1505;
+    border:3px solid var(--wood-dark); border-radius:14px;
+    padding:9px 17px; cursor:pointer; position:relative; white-space:nowrap;
+    background:
+      repeating-linear-gradient(90deg, rgba(0,0,0,.06) 0 5px, rgba(255,255,255,.05) 5px 10px),
+      linear-gradient(180deg,#b3712f,#8a4f22);
+    box-shadow:0 6px 0 #2c1505, 0 9px 15px rgba(0,0,0,.45), inset 0 2px 0 rgba(255,255,255,.28);
+    transition:transform .07s ease, box-shadow .07s ease, filter .12s;
+  }
+  .btn3d:hover{ filter:brightness(1.08); }
+  .btn3d:active{ transform:translateY(5px); box-shadow:0 1px 0 #2c1505, 0 3px 7px rgba(0,0,0,.4), inset 0 2px 0 rgba(255,255,255,.2); }
+  /* גלזורה צבעונית מעל העץ כדי להבחין בין הפעולות */
+  .btn-check  { background:repeating-linear-gradient(90deg, rgba(0,0,0,.06) 0 5px, rgba(255,255,255,.05) 5px 10px), linear-gradient(180deg,#62d06d,#2f8f3c); box-shadow:0 6px 0 #1c5a25, 0 9px 15px rgba(0,0,0,.45), inset 0 2px 0 rgba(255,255,255,.3); }
+  .btn-check:active  { box-shadow:0 1px 0 #1c5a25, 0 3px 7px rgba(0,0,0,.4), inset 0 2px 0 rgba(255,255,255,.2); }
+  .btn-shuffle{ background:repeating-linear-gradient(90deg, rgba(0,0,0,.06) 0 5px, rgba(255,255,255,.05) 5px 10px), linear-gradient(180deg,#ff9a3d,#d35e10); box-shadow:0 6px 0 #8a3d08, 0 9px 15px rgba(0,0,0,.45), inset 0 2px 0 rgba(255,255,255,.3); }
+  .btn-shuffle:active{ box-shadow:0 1px 0 #8a3d08, 0 3px 7px rgba(0,0,0,.4), inset 0 2px 0 rgba(255,255,255,.2); }
+  .btn-reset  { background:repeating-linear-gradient(90deg, rgba(0,0,0,.06) 0 5px, rgba(255,255,255,.05) 5px 10px), linear-gradient(180deg,#43b6ff,#1f78c8); box-shadow:0 6px 0 #0c4f86, 0 9px 15px rgba(0,0,0,.45), inset 0 2px 0 rgba(255,255,255,.3); }
+  .btn-reset:active  { box-shadow:0 1px 0 #0c4f86, 0 3px 7px rgba(0,0,0,.4), inset 0 2px 0 rgba(255,255,255,.2); }
+  .btn-fs     { background:repeating-linear-gradient(90deg, rgba(0,0,0,.06) 0 5px, rgba(255,255,255,.05) 5px 10px), linear-gradient(180deg,#caa24a,#9a7320); box-shadow:0 6px 0 #5e4512, 0 9px 15px rgba(0,0,0,.45), inset 0 2px 0 rgba(255,255,255,.3); }
+  .btn-fs:active     { box-shadow:0 1px 0 #5e4512, 0 3px 7px rgba(0,0,0,.4), inset 0 2px 0 rgba(255,255,255,.2); }
+
+  /* ===================== אזור הצניחה ===================== */
+  .dropzone{
+    flex:0 0 auto;
+    height:calc(var(--fall-img) + 86px);
+    position:relative;
+    display:flex; align-items:center; justify-content:center;
+  }
+  .dropzone .done-msg{
+    font-family:'Rubik',sans-serif; font-weight:900; color:#fff; text-align:center;
+    font-size:clamp(1rem,1.9vw,1.6rem);
+    -webkit-text-stroke:1.5px var(--wood-dark); paint-order:stroke fill;
+    background:linear-gradient(180deg,#62d06d,#2f8f3c);
+    border:3px solid var(--wood-dark);
+    padding:13px 32px; border-radius:16px;
+    box-shadow:0 7px 0 #1c5a25, 0 11px 20px rgba(0,0,0,.45);
+  }
+
+  /* הקלף הצונח — גדול ובולט */
+  .fall-card{
+    position:absolute; top:14px;
+    width:var(--fall-w);
+    background:var(--card-bg);
+    border-radius:20px; border:5px solid #fff;
+    box-shadow:0 16px 36px rgba(0,0,0,.45);
+    overflow:hidden; cursor:grab;
+    display:flex; flex-direction:column; user-select:none; touch-action:none;
+    animation:drop 1s cubic-bezier(.25,.9,.3,1.05);
+  }
+  .fall-card:active{ cursor:grabbing; }
+  .fall-card .label{
+    font-family:'Rubik',sans-serif; font-weight:900;
+    font-size:clamp(.95rem,1.45vw,1.35rem);
+    text-align:center; padding:11px 10px;
+    background:linear-gradient(135deg,#ffe7a3,#ffc8dd);
+    color:var(--ink); line-height:1.2;
+  }
+  .fall-card .img{
+    height:var(--fall-img); background:#fff;
+    display:flex; align-items:center; justify-content:center; padding:8px;
+  }
+  .fall-card .img img{ max-width:100%; max-height:100%; object-fit:contain; pointer-events:none; }
+
+  @keyframes drop{
+    0%   { transform:translateY(-130vh) rotate(-6deg); }
+    60%  { transform:translateY(0) rotate(0); }
+    74%  { transform:translateY(-24px); }
+    86%  { transform:translateY(0); }
+    93%  { transform:translateY(-7px); }
+    100% { transform:translateY(0); }
+  }
+
+  /* ===================== ציר הזמן — נחש ===================== */
+  .timeline-zone{
+    flex:1 1 auto; position:relative;
+    padding:2px 24px 12px;
+    display:flex; flex-direction:column;
+    background:linear-gradient(0deg, rgba(36,16,70,.55), rgba(36,16,70,.05));
+  }
+  .tl-title{
+    font-family:'Rubik',sans-serif; font-weight:900; color:#ffe9b0; text-align:center;
+    -webkit-text-stroke:1.4px var(--wood-dark); paint-order:stroke fill;
+    text-shadow:0 2px 0 #4a2a10;
+    font-size:clamp(.82rem,1.15vw,1.05rem); margin:0 0 4px;
+  }
+  .timeline{
+    position:relative; flex:1 1 auto;
+    display:flex; flex-direction:column; justify-content:space-evenly;
+    overflow:visible;
+  }
+  .road{ position:absolute; inset:0; z-index:0; pointer-events:none; overflow:visible; }
+
+  .lane{ display:flex; align-items:center; justify-content:space-evenly; gap:10px; overflow:visible; z-index:1; }
+  .lane.rev{ flex-direction:row-reverse; }
+
+  .slot{
+    width:var(--tl-card-w);
+    display:flex; flex-direction:column; align-items:center;
+    position:relative; overflow:visible;
+  }
+
+  /* שלט-עץ לשעה */
+  .hour{
+    font-family:'Rubik',sans-serif; font-weight:900;
+    font-size:clamp(11px,1.05vw,15px);
+    color:#ffe9b0; -webkit-text-stroke:1.5px var(--wood-dark); paint-order:stroke fill;
+    text-shadow:0 2px 0 #4a2a10;
+    border:3px solid var(--wood-dark); border-radius:10px;
+    padding:2px 11px; margin-bottom:5px; white-space:nowrap;
+    background:
+      repeating-linear-gradient(90deg, rgba(0,0,0,.07) 0 4px, rgba(255,255,255,.05) 4px 8px),
+      linear-gradient(180deg,#a9682f,#7c451d);
+    box-shadow:0 3px 0 #2c1505, 0 5px 9px rgba(0,0,0,.4); z-index:3;
+  }
+  #timeline .slot[data-index="0"] .hour{
+    background:repeating-linear-gradient(90deg, rgba(0,0,0,.07) 0 4px, rgba(255,255,255,.05) 4px 8px), linear-gradient(180deg,#5bb85f,#2f7d3b);
+    border-color:#173f1c; color:#fff;
+  }
+
+  .pad{
+    width:100%; min-height:calc(var(--tl-img-h) + 38px);
+    border:3px dashed rgba(255,255,255,.85);
+    border-radius:16px; background:rgba(255,255,255,.16);
+    display:flex; align-items:center; justify-content:center;
+    transition:border-color .12s, background .12s, transform .1s, box-shadow .12s;
+  }
+  /* רק המשבצת שתקבל את הקלף נדלקת */
+  .pad.dragover{
+    border-color:var(--yellow); border-style:solid;
+    background:rgba(255,194,51,.42); transform:scale(1.08);
+    box-shadow:0 0 0 4px rgba(255,194,51,.45), 0 8px 18px rgba(0,0,0,.4);
+  }
+  .pad .ph{ color:rgba(255,255,255,.85); font-size:1.5rem; }
+  .slot.correct .pad{ border-style:solid; border-color:var(--green); background:rgba(34,197,94,.3); }
+  .slot.wrong   .pad{ border-style:solid; border-color:var(--red);   background:rgba(255,59,59,.3); }
+
+  /* קלף קטן על הציר */
+  .tl-card{
+    width:100%;
+    background:var(--card-bg);
+    border-radius:13px; border:3px solid #fff;
+    box-shadow:0 5px 12px rgba(0,0,0,.4);
+    overflow:hidden; cursor:grab; user-select:none; touch-action:none;
+    transition:transform .16s cubic-bezier(.2,1.5,.4,1), box-shadow .16s;
+    transform-origin:center center;
+  }
+  .tl-card:hover{ transform:scale(2.5); z-index:60; box-shadow:0 20px 44px rgba(0,0,0,.55); border-color:var(--yellow); }
+  /* בזמן גרירה — אל תגדיל קלפים אחרים בריחוף */
+  body.dragging .tl-card:hover{ transform:none; z-index:1; box-shadow:0 5px 12px rgba(0,0,0,.4); border-color:#fff; }
+  .tl-card .label{
+    font-family:'Rubik',sans-serif; font-weight:700;
+    font-size:clamp(8.5px,.78vw,11px);
+    text-align:center; padding:3px; line-height:1.15;
+    background:linear-gradient(135deg,#ffe7a3,#ffc8dd); color:var(--ink);
+    min-height:2.3em; display:flex; align-items:center; justify-content:center;
+  }
+  .tl-card .img{ height:var(--tl-img-h); background:#fff; display:flex; align-items:center; justify-content:center; padding:3px; }
+  .tl-card .img img{ max-width:100%; max-height:100%; object-fit:contain; pointer-events:none; }
+  .slot.correct .tl-card{ border-color:var(--green); }
+  .slot.wrong   .tl-card{ border-color:var(--red); }
+
+  /* קלף-רפאים שנגרר עם הסמן */
+  .drag-ghost{
+    position:fixed; z-index:300; margin:0; pointer-events:none;
+    animation:none !important;
+    transform:rotate(-3deg) scale(1.04);
+    box-shadow:0 22px 42px rgba(0,0,0,.55);
+  }
+
+  /* ===================== חלקיקים / קונפטי ===================== */
+  #fx{ position:fixed; inset:0; pointer-events:none; z-index:170; }
+
+  /* ===================== מסך ניצחון ===================== */
+  .win{
+    position:fixed; inset:0; z-index:200;
+    display:none; align-items:center; justify-content:center;
+    flex-direction:column; gap:16px;
+    background:radial-gradient(circle at center, rgba(36,16,70,.5), rgba(15,6,32,.85));
+    backdrop-filter:blur(3px);
+  }
+  .win.show{ display:flex; animation:fadeIn .3s ease; }
+  .win img{
+    max-width:min(56vw,520px); max-height:50vh;
+    border-radius:24px; background:rgba(255,255,255,.95); padding:10px;
+    box-shadow:0 24px 70px rgba(0,0,0,.6);
+    animation:pop .55s cubic-bezier(.2,1.5,.45,1);
+  }
+  .win .greet{
+    font-family:'Rubik',sans-serif; font-weight:900;
+    color:#ffd24d; -webkit-text-stroke:2.5px var(--wood-dark); paint-order:stroke fill;
+    text-shadow:0 3px 0 #6b3d12;
+    background:linear-gradient(180deg,#fff7e0,#ffe39a);
+    -webkit-text-fill-color:initial;
+    font-size:clamp(1.2rem,2.4vw,1.9rem);
+    padding:12px 34px; border-radius:18px; border:4px solid var(--wood-dark);
+    box-shadow:0 8px 0 #6b3d12, 0 14px 24px rgba(0,0,0,.5);
+  }
+  @keyframes pop{ 0%{ transform:scale(.3); opacity:0; } 100%{ transform:scale(1); opacity:1; } }
+  @keyframes fadeIn{ from{opacity:0;} to{opacity:1;} }
+
+  /* ===================== הודעה צפה ===================== */
+  .toast{
+    position:fixed; bottom:8px; right:50%; transform:translateX(50%) translateY(20px);
+    font-family:'Rubik',sans-serif; font-weight:900;
+    color:#fff; -webkit-text-stroke:1.4px var(--wood-dark); paint-order:stroke fill;
+    background:linear-gradient(180deg,#b3712f,#7c451d);
+    border:3px solid var(--wood-dark);
+    font-size:1rem; padding:9px 22px; border-radius:14px;
+    box-shadow:0 6px 0 #2c1505, 0 12px 22px rgba(0,0,0,.45);
+    opacity:0; pointer-events:none; transition:opacity .25s, transform .25s; z-index:190;
+  }
+  .toast.show{ opacity:1; transform:translateX(50%) translateY(0); pointer-events:auto; cursor:pointer; }
+</style>
+</head>
+<body>
+<div class="game">
+
+  <!-- ===== HUD ===== -->
+  <header class="hud">
+    <div class="logo"><span class="logo-text">ציר הזמן של השיעור</span></div>
+    <div class="counter" id="counter">קלף 1 מתוך 12</div>
+    <div class="btns">
+      <button class="btn3d btn-check"   id="btnCheck">✓ בדיקה</button>
+      <button class="btn3d btn-shuffle" id="btnShuffle">🔀 ערבב</button>
+      <button class="btn3d btn-reset"   id="btnReset">↺ איפוס</button>
+    </div>
+  </header>
+
+  <!-- ===== אזור הצניחה ===== -->
+  <section class="dropzone" id="dropzone"></section>
+
+  <!-- ===== ציר הזמן (נחש) ===== -->
+  <section class="timeline-zone">
+    <p class="tl-title">⏰ גררו כל קלף אל משבצת הזמן שמתאימה לו (8:00 = תחילת השיעור)</p>
+    <div class="timeline" id="timeline">
+      <svg class="road" id="road" xmlns="http://www.w3.org/2000/svg"></svg>
+    </div>
+  </section>
+</div>
+
+<canvas id="fx"></canvas>
+
+<!-- ===== מסך ניצחון ===== -->
+<div class="win" id="win">
+  <img id="winImg" alt="הודעת ניצחון">
+  <div class="greet">🎉 כל הכבוד! סידרתם את השיעור נכון! 🎉</div>
+  <button class="btn3d btn-check"   id="btnContinueJourney" style="font-size:1.1rem; display:none">המשך לשלב 2 ▶</button>
+  <button class="btn3d btn-shuffle" id="btnPlayAgain" style="font-size:1.1rem">▶ שחקו שוב</button>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* =========================================================
+   12 ההיגדים בסדר הכרונולוגי הנכון (id 0 = 8:00 ... id 11 = 9:50).
+   ========================================================= */
+const CARDS = [
+  { text:"נשמע צלצול",                                file:"נשמע צלצול.png" },
+  { text:"המורה נכנסת לכיתה",                           file:"המורה נכנסת לכיתה.png" },
+  { text:"התלמידים מתיישבים",                          file:"התלמידים מתיישבים.png" },
+  { text:"המורה בודקת נוכחות",                         file:"המורה בודקת נוכחות.png" },
+  { text:"המורה מקנה חומר",                            file:"המורה מקנה חומר.png" },
+  { text:"התלמידים מקשיבים",                           file:"התלמידים מקשיבים.png" },
+  { text:"המורה מקיימת שיח במליאה",                     file:"המורה מקיימת שיח במליאה.png" },
+  { text:"המורה נותנת משימה בזוגות",                    file:"המורה נותנת משימה בזוגות.png" },
+  { text:"התלמידים עובדים על משימה בקבוצה קטנה",         file:"התלמידים עובדים על משימה בקבוצה קטנה.png" },
+  { text:"התלמידים מתרגלים במחשב/במחברת",               file:"התלמידים מתרגלים במחשב ובמחברת.png" },
+  { text:"המורה מסכמת את השיעור",                       file:"המורה מסכמת את השיעור.png" },
+  { text:"המורה נותנת שיעורי בית",                      file:"המורה נותנת שיעורי בית.png" }
+];
+
+/* ⏰ שעות הציר — 10 דקות לקלף, מ-8:00. ערכו רק שורה זו ללוח אחר. */
+const HOURS = ["8:00","8:10","8:20","8:30","8:40","8:50","9:00","9:10","9:20","9:30","9:40","9:50"];
+
+/* 🐍 מספר שורות נתיב הנחש (12 קלפים). 3 → 3×4. נסו 2 או 4 לצורות אחרות. */
+const ROWS = 3;
+
+const WIN_IMAGE = "הודעת ניצחון.png";
+const BG_IMAGE  = "רקע מעודכן.png";
+const N = CARDS.length;
+const imgPath = (name)=> "images/" + encodeURIComponent(name);
+document.body.style.backgroundImage = 'url("'+imgPath(BG_IMAGE)+'")';
+
+/* ---------- מצב המשחק ---------- */
+let slots   = new Array(N).fill(null);  // slots[i] = id או null
+let queue   = [];                        // קלפים שעוד לא צנחו (אקראי)
+let current = null;                       // הקלף שנמצא כעת באזור הצניחה
+
+/* ---------- כלי עזר ---------- */
+function shuffled(a){ a=a.slice(); for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];} return a; }
+const placedCount = ()=> slots.filter(x=>x!==null).length;
+
+/* ---------- אלמנטים ---------- */
+const dropzoneEl   = document.getElementById('dropzone');
+const timelineEl   = document.getElementById('timeline');
+const timelineZone = document.querySelector('.timeline-zone');
+const roadSvg      = document.getElementById('road');
+const counterEl    = document.getElementById('counter');
+let slotPads = [], slotEls = [];
+
+/* ---------- בניית ציר הזמן (פעם אחת) ---------- */
+function buildTimeline(){
+  [...timelineEl.querySelectorAll('.lane')].forEach(l=>l.remove());
+  slotPads = []; slotEls = [];
+  const cols = Math.ceil(N/ROWS);
+  let idx = 0;
+  for(let r=0;r<ROWS;r++){
+    const lane = document.createElement('div');
+    lane.className = 'lane' + (r%2===1 ? ' rev' : '');
+    for(let c=0;c<cols && idx<N;c++,idx++){
+      const i = idx;
+      const slot = document.createElement('div');
+      slot.className='slot'; slot.dataset.index=i;
+      slot.innerHTML = '<div class="hour">'+HOURS[i]+'</div>';
+      const pad = document.createElement('div');
+      pad.className='pad'; pad.dataset.index=i;
+      slot.appendChild(pad);
+      lane.appendChild(slot);
+      slotEls[i]=slot; slotPads[i]=pad;
+    }
+    timelineEl.appendChild(lane);
+  }
+}
+
+/* ---------- רינדור תוכן ---------- */
+function makeTlCard(id){
+  const c=CARDS[id];
+  const el=document.createElement('div');
+  el.className='tl-card'; el.dataset.id=id;
+  el.innerHTML='<div class="label">'+c.text+'</div><div class="img"><img src="'+imgPath(c.file)+'" alt="'+c.text+'"></div>';
+  el.addEventListener('pointerdown', e=> startDrag(e,'slot',id));
+  return el;
+}
+function renderSlots(){
+  for(let i=0;i<N;i++){
+    const pad=slotPads[i]; pad.innerHTML='';
+    if(slots[i]===null) pad.innerHTML='<span class="ph">＋</span>';
+    else pad.appendChild(makeTlCard(slots[i]));
+  }
+}
+function spawnFallingCard(){
+  dropzoneEl.innerHTML='';
+  if(current===null){
+    const m=document.createElement('div'); m.className='done-msg';
+    m.textContent='כל הקלפים הונחו! לחצו ✓ בדיקה';
+    dropzoneEl.appendChild(m);
+    return;
+  }
+  const id=current, c=CARDS[id];
+  const el=document.createElement('div');
+  el.className='fall-card'; el.dataset.id=id; el.id='fallCard';
+  el.innerHTML='<div class="label">'+c.text+'</div><div class="img"><img src="'+imgPath(c.file)+'" alt="'+c.text+'"></div>';
+  el.addEventListener('pointerdown', e=> startDrag(e,'fall',id));
+  dropzoneEl.appendChild(el);
+}
+function updateCounter(){
+  counterEl.innerHTML = current!==null
+    ? 'קלף <b>'+(placedCount()+1)+'</b> מתוך '+N
+    : '<b>'+N+'</b> / '+N+' — מוכן לבדיקה ✓';
+}
+
+/* =========================================================
+   מנוע גרירה מבוסס-מצביע (pointer) — מדויק לפי מרכז הקלף
+   ========================================================= */
+let drag = null;
+function startDrag(e, kind, id){
+  if(e.button!==undefined && e.button!==0) return;   // לחצן שמאלי בלבד
+  e.preventDefault();
+  const src = e.currentTarget;
+  const rect = src.getBoundingClientRect();
+
+  const ghost = src.cloneNode(true);
+  ghost.classList.add('drag-ghost');
+  ghost.style.width = rect.width+'px';
+  ghost.style.left  = rect.left+'px';
+  ghost.style.top   = rect.top+'px';
+  document.body.appendChild(ghost);
+
+  src.style.visibility='hidden';
+  document.body.classList.add('dragging');
+
+  drag = {
+    kind, id,
+    from: (kind==='slot' ? slots.indexOf(id) : -1),
+    src, ghost, w:rect.width, h:rect.height,
+    offX:e.clientX-rect.left, offY:e.clientY-rect.top,
+    startLeft:rect.left, startTop:rect.top,
+    padRects: slotPads.map(p=>p.getBoundingClientRect()),
+    tlzTop: timelineZone.getBoundingClientRect().top,
+    target:-1
+  };
+  audio(); blip(kind==='fall'?600:520, .05, 'square', .05);
+  window.addEventListener('pointermove', onMove);
+  window.addEventListener('pointerup',   onUp);
+}
+function slotAtPoint(cx, cy){
+  if(cy < drag.tlzTop - 8) return -1;                // מעל הציר → ביטול
+  const R = drag.padRects;
+  for(let i=0;i<R.length;i++){ const r=R[i]; if(cx>=r.left&&cx<=r.right&&cy>=r.top&&cy<=r.bottom) return i; }
+  let best=-1, bd=Infinity;                          // אחרת — הקרובה ביותר למרכז
+  for(let i=0;i<R.length;i++){ const r=R[i]; const dx=cx-(r.left+r.width/2), dy=cy-(r.top+r.height/2); const d=dx*dx+dy*dy; if(d<bd){bd=d;best=i;} }
+  return best;
+}
+function onMove(e){
+  if(!drag) return;
+  const left=e.clientX-drag.offX, top=e.clientY-drag.offY;
+  drag.ghost.style.left=left+'px'; drag.ghost.style.top=top+'px';
+  const cx=left+drag.w/2, cy=top+drag.h/2;
+  const t=slotAtPoint(cx,cy);
+  if(t!==drag.target){
+    if(drag.target>=0) slotPads[drag.target].classList.remove('dragover');
+    drag.target=t;
+    if(t>=0) slotPads[t].classList.add('dragover');
+  }
+}
+function onUp(){
+  if(!drag) return;
+  window.removeEventListener('pointermove', onMove);
+  window.removeEventListener('pointerup',   onUp);
+  const {kind, id, from, target:t} = drag;
+  if(t>=0) slotPads[t].classList.remove('dragover');
+
+  if(t<0 || (kind==='slot' && t===from)){ // ביטול → חזרה למקור
+    snapGhost(drag.startLeft, drag.startTop, ()=>{ endGhost(); renderSlots(); });
+    return;
+  }
+
+  // עדכון מצב הנתונים
+  const occ = slots[t];
+  if(kind==='fall'){
+    if(occ===null){ slots[t]=id; current = queue.length ? queue.shift() : null; }
+    else          { slots[t]=id; current = occ; }            // הקלף הקודם חוזר לאזור הצניחה
+  }else{
+    if(occ===null){ slots[t]=id; slots[from]=null; }
+    else          { slots[t]=id; slots[from]=occ; }          // החלפה (swap)
+  }
+
+  // snap חלק למרכז המשבצת, ואז סיום
+  const r=drag.padRects[t];
+  const tx=r.left+r.width/2-drag.w/2, ty=r.top+r.height/2-drag.h/2;
+  snapGhost(tx, ty, ()=>{
+    endGhost();
+    renderSlots(); updateCounter();
+    landingBurst(slotPads[t]); dropSound();
+    if(kind==='fall') spawnFallingCard();
+  });
+}
+function snapGhost(x, y, cb){
+  const g=drag.ghost;
+  g.style.transition='left .16s ease, top .16s ease';
+  g.style.left=x+'px'; g.style.top=y+'px';
+  let done=false; const fin=()=>{ if(done) return; done=true; cb(); };
+  g.addEventListener('transitionend', fin, {once:true});
+  setTimeout(fin, 210);
+}
+function endGhost(){
+  if(drag){ if(drag.ghost) drag.ghost.remove(); if(drag.src) drag.src.style.visibility=''; }
+  document.body.classList.remove('dragging');
+  drag=null;
+}
+
+/* ---------- בדיקה ---------- */
+function check(){
+  blip(440,.06,'sine',.05);
+  let n=0;
+  for(let i=0;i<N;i++){
+    slotEls[i].classList.remove('correct','wrong');
+    if(slots[i]===null) continue;
+    if(slots[i]===i){ slotEls[i].classList.add('correct'); n++; }
+    else slotEls[i].classList.add('wrong');
+  }
+  if(n===N){ winSound(); fireConfetti(); setTimeout(showWin,500); }
+  else toast('נכונים: '+n+' מתוך '+N+' — נסו שוב 💪');
+}
+
+/* ---------- ניצחון ---------- */
+function showWin(){ const img=document.getElementById('winImg'); if(!img.src) img.src=imgPath(WIN_IMAGE); document.getElementById('win').classList.add('show'); }
+function hideWin(){ document.getElementById('win').classList.remove('show'); }
+
+/* ---------- הודעה צפה ---------- */
+let toastTimer=null;
+function toast(msg, ms){ const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show'); clearTimeout(toastTimer); toastTimer=setTimeout(()=>t.classList.remove('show'), ms||2600); }
+document.getElementById('toast').addEventListener('click', ()=>{ clearTimeout(toastTimer); document.getElementById('toast').classList.remove('show'); });
+
+/* ---------- פעולות ---------- */
+function newGame(){
+  slots=new Array(N).fill(null);
+  const order=shuffled(CARDS.map((_,i)=>i));
+  current=order.shift(); queue=order;
+  slotEls.forEach(s=>s.classList.remove('correct','wrong'));
+  renderSlots(); updateCounter(); spawnFallingCard();
+  requestAnimationFrame(drawRoad);
+}
+document.getElementById('btnCheck').addEventListener('click',()=>{ click3d(); check(); });
+document.getElementById('btnShuffle').addEventListener('click',()=>{ click3d(); newGame(); toast('עורבב מחדש 🔀'); });
+document.getElementById('btnReset').addEventListener('click',()=>{ click3d(); newGame(); toast('המשחק אופס ↺'); });
+document.getElementById('btnPlayAgain').addEventListener('click',()=>{ click3d(); hideWin(); newGame(); });
+document.getElementById('win').addEventListener('click',e=>{ if(e.target.id==='win') hideWin(); });
+
+/* ---------- חיבור למסע 4 השלבים (פעיל רק כשהמשחק רץ בתוך iframe של המארח) ---------- */
+function isEmbed(){ return window.self !== window.top; }
+function postJourney(m){ if(isEmbed()){ try{ parent.postMessage(m,'*'); }catch(e){} } }
+if(isEmbed()){
+  document.getElementById('btnPlayAgain').style.display='none';   // במסע: ממשיכים, לא משחקים שוב
+  const bc=document.getElementById('btnContinueJourney');
+  bc.style.display='';
+  bc.addEventListener('click', ()=>{ click3d(); postJourney({type:'next'}); });
+}
+window.addEventListener('load', ()=> postJourney({type:'stage', n:1, title:'סדר השיעור הרגיל'}));
+
+/* ---------- מסך מלא ---------- */
+/* כפתור מסך-המלא היחיד מנוהל ע"י המעטפת (index.html) שרצה בחלון העליון —
+   רק לחלון העליון יש הרשאת fullscreen. הכפתור הפנימי (שלא עבד בתוך ה-iframe) הוסר כדי למנוע כפילות. */
+
+/* ======================= נתיב הנחש (SVG, עקומות חלקות) ======================= */
+function drawRoad(){
+  const box=timelineEl.getBoundingClientRect();
+  if(!box.width) return;
+  roadSvg.setAttribute('viewBox','0 0 '+box.width+' '+box.height);
+  const p=[];
+  for(let i=0;i<N;i++){
+    if(!slotEls[i]) continue;
+    const r=slotEls[i].getBoundingClientRect();
+    p.push([r.left-box.left+r.width/2, r.top-box.top+r.height/2 + 6]);
+  }
+  if(p.length<2){ roadSvg.innerHTML=''; return; }
+  // Catmull-Rom → Bézier: עקומה רציפה וחלקה דרך מרכזי המשבצות (פניות מעוגלות)
+  let d='M '+p[0][0].toFixed(1)+' '+p[0][1].toFixed(1);
+  for(let i=0;i<p.length-1;i++){
+    const p0=p[i-1]||p[i], p1=p[i], p2=p[i+1], p3=p[i+2]||p[i+1];
+    const c1x=p1[0]+(p2[0]-p0[0])/6, c1y=p1[1]+(p2[1]-p0[1])/6;
+    const c2x=p2[0]-(p3[0]-p1[0])/6, c2y=p2[1]-(p3[1]-p1[1])/6;
+    d+=' C '+c1x.toFixed(1)+' '+c1y.toFixed(1)+' '+c2x.toFixed(1)+' '+c2y.toFixed(1)+' '+p2[0].toFixed(1)+' '+p2[1].toFixed(1);
+  }
+  roadSvg.innerHTML=
+    '<path d="'+d+'" fill="none" stroke="rgba(58,30,10,.55)" stroke-width="30" stroke-linecap="round" stroke-linejoin="round"/>'+
+    '<path d="'+d+'" fill="none" stroke="#ff7a18" stroke-width="16" stroke-linecap="round" stroke-linejoin="round"/>'+
+    '<path d="'+d+'" fill="none" stroke="#ffc233" stroke-width="4.5" stroke-dasharray="2 16" stroke-linecap="round"/>';
+}
+let rt=null;
+addEventListener('resize',()=>{ clearTimeout(rt); rt=setTimeout(drawRoad,120); sizeFx(); });
+
+/* ======================= סאונד (Web Audio) ======================= */
+let actx=null;
+function audio(){ if(!actx){ try{actx=new (window.AudioContext||window.webkitAudioContext)();}catch(e){} } if(actx&&actx.state==='suspended') actx.resume(); return actx; }
+function blip(freq=600,dur=.08,type='square',gain=.06){
+  const c=audio(); if(!c) return;
+  const o=c.createOscillator(), g=c.createGain();
+  o.type=type; o.frequency.value=freq; o.connect(g); g.connect(c.destination);
+  const t=c.currentTime; g.gain.setValueAtTime(gain,t); g.gain.exponentialRampToValueAtTime(.0001,t+dur);
+  o.start(t); o.stop(t+dur);
+}
+const click3d  =()=>blip(300,.06,'square',.06);
+const dropSound=()=>blip(380,.1,'sine',.07);
+function winSound(){ [523,659,784,1047].forEach((f,i)=>setTimeout(()=>blip(f,.18,'triangle',.08), i*120)); }
+
+/* ======================= חלקיקים / קונפטי ======================= */
+const fx=document.getElementById('fx'), fctx=fx.getContext('2d');
+let parts=[], fxAnim=null;
+function sizeFx(){ fx.width=innerWidth; fx.height=innerHeight; }
+sizeFx();
+const COLORS=['#ff7a18','#ffc233','#ff3d77','#7b2ff7','#1f8fff','#22c55e','#ff3b3b'];
+function emit(x,y,count,spread,power){
+  for(let i=0;i<count;i++){
+    const a=Math.random()*Math.PI*2, sp=Math.random()*power;
+    parts.push({ x,y, vx:Math.cos(a)*sp*spread, vy:Math.sin(a)*sp - power*.4,
+      g:.35+Math.random()*.2, s:5+Math.random()*7, rot:Math.random()*6.28, vr:(Math.random()-.5)*.4,
+      c:COLORS[(Math.random()*COLORS.length)|0], life:0, max:70+Math.random()*50 });
+  }
+  if(!fxAnim) fxAnim=requestAnimationFrame(tickFx);
+}
+function landingBurst(pad){ const r=pad.getBoundingClientRect(); emit(r.left+r.width/2, r.top+r.height/2, 26, 1, 9); }
+function fireConfetti(){ emit(innerWidth/2, innerHeight/2, 240, 1.6, 18); }
+function tickFx(){
+  fctx.clearRect(0,0,fx.width,fx.height);
+  parts=parts.filter(p=>p.life<p.max);
+  parts.forEach(p=>{ p.life++; p.vy+=p.g; p.x+=p.vx; p.y+=p.vy; p.vx*=.99; p.rot+=p.vr;
+    fctx.save(); fctx.translate(p.x,p.y); fctx.rotate(p.rot);
+    fctx.globalAlpha=Math.max(0,1-p.life/p.max); fctx.fillStyle=p.c;
+    fctx.fillRect(-p.s/2,-p.s/2,p.s,p.s*.6); fctx.restore(); });
+  if(parts.length) fxAnim=requestAnimationFrame(tickFx);
+  else{ fctx.clearRect(0,0,fx.width,fx.height); fxAnim=null; }
+}
+
+/* ---------- התחלה ---------- */
+buildTimeline();
+newGame();
+window.addEventListener('load', ()=>{ requestAnimationFrame(drawRoad); if(isEmbed()) setTimeout(()=>toast('💡 לחוויה הטובה ביותר — לחצו על ⛶ שלמעלה למסך מלא'), 800); });
+</script>
+</body>
+</html>

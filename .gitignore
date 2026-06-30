@@ -1,0 +1,8 @@
+# גיבויי תמונות מקומיים — לא נדרשים ב-repo
+images_backup/
+images2_backup/
+
+# קבצים זמניים
+*.tmp
+.playwright-mcp/
+scratch_*

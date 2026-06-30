@@ -1,0 +1,1425 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>סדר השיעור בלמידה מותאמת — משחק 2</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Alef:wght@400;700&family=Rubik:wght@400;500;700;900&family=Suez+One&family=Secular+One&display=swap" rel="stylesheet">
+<style>
+  /* ============================================================
+     🎛️  כוונון מהיר — אם משהו נחתך, הקטינו את הערכים האלה
+     ------------------------------------------------------------
+     --fall-w   : רוחב הקלף הצונח הגדול
+     --fall-img : גובה האיור בקלף הצונח
+     --tl-img-h : גובה האיור בקלף שעל השורה (הקטן)
+     --tl-card-w: רוחב הקלף שבשורה
+     ============================================================ */
+  :root{
+    --fall-w:    clamp(240px, 23vw, 340px);
+    --fall-img:  clamp(130px, 19vh, 210px);
+    --tl-img-h:  clamp(64px, 11vh, 122px);
+    --tl-card-w: clamp(118px, 13.5vw, 184px);
+
+    --orange:#ff7a18; --yellow:#ffc233; --pink:#ff3d77; --purple:#7b2ff7;
+    --blue:#1f8fff;  --green:#22c55e;   --green-d:#138a37; --red:#ff3b3b;
+    --ink:#241046;   --card-bg:#fffdf6;
+
+    /* גווני עץ ל"הרפתקה ידנית" — זהים למשחק הראשון */
+    --wood-dark:#3a1e0a; --wood:#8a4f22; --wood-lite:#b3712f;
+  }
+
+  *{ box-sizing:border-box; }
+  html,body{ height:100%; margin:0; overflow:hidden; }
+
+  body{
+    font-family:'Rubik',system-ui,sans-serif;
+    color:var(--ink);
+    background-color:#caa9e0;
+    background-size:cover; background-position:center;
+    background-repeat:no-repeat; background-attachment:fixed;
+  }
+  /* 🌇 שכבת גוון שונה מהמשחק הראשון — מעניקה תחושת "אותו עולם, שעה אחרת" */
+  body::before{
+    content:""; position:fixed; inset:0; z-index:0; pointer-events:none;
+    background:
+      linear-gradient(180deg, rgba(123,47,247,.30) 0%, rgba(31,143,255,.10) 38%, rgba(255,122,24,.18) 100%),
+      radial-gradient(120% 75% at 50% 0%, rgba(255,210,140,.25), rgba(36,16,70,.0) 60%);
+    mix-blend-mode:multiply;
+  }
+
+  .game{ position:relative; z-index:1; height:100vh; height:100dvh; display:flex; flex-direction:column; }
+
+  /* ===================== טיפול טקסט "גיימי" ===================== */
+  .game-text{
+    font-family:'Rubik','Suez One',sans-serif; font-weight:900;
+    color:#ffd24d;
+    -webkit-text-stroke:3px var(--wood-dark);
+    paint-order:stroke fill;
+    text-shadow:0 3px 0 #6b3d12, 0 4px 7px rgba(0,0,0,.4);
+    letter-spacing:.3px;
+  }
+
+  /* ===================== HUD ===================== */
+  .hud{
+    flex:0 0 auto;
+    display:flex; align-items:center; gap:14px;
+    padding:7px 20px;
+    background:linear-gradient(180deg, rgba(36,16,70,.92), rgba(36,16,70,.72));
+    border-bottom:4px solid rgba(255,194,51,.75);
+    box-shadow:0 4px 20px rgba(0,0,0,.45);
+  }
+
+  /* לוגו שלט-עץ תלוי */
+  .logo{
+    position:relative; flex:0 0 auto;
+    padding:7px 24px 9px; margin-top:4px;
+    border-radius:16px; border:4px solid var(--wood-dark);
+    background:
+      repeating-linear-gradient(90deg, rgba(0,0,0,.07) 0 6px, rgba(255,255,255,.05) 6px 12px),
+      linear-gradient(180deg,#a9682f,#8a4f22 58%,#6e3d18);
+    box-shadow:0 7px 0 #2c1505, 0 12px 22px rgba(0,0,0,.55), inset 0 2px 0 rgba(255,255,255,.28);
+    transform:rotate(-1.4deg);
+  }
+  .logo::before, .logo::after{   /* שני "ברגים" בפינות */
+    content:""; position:absolute; top:6px; width:11px; height:11px; border-radius:50%;
+    background:radial-gradient(circle at 35% 30%, #fff, #c4c4c4 42%, #6b6b6b 76%, #333);
+    box-shadow:0 1px 2px rgba(0,0,0,.7);
+  }
+  .logo::before{ right:9px; } .logo::after{ left:9px; }
+  .logo-text{
+    display:inline-block;
+    font-family:'Rubik','Suez One',sans-serif; font-weight:900; letter-spacing:.4px;
+    font-size:clamp(1rem,1.95vw,1.85rem);
+    /* מילוי מלא ובהיר מאוד (קרם/לבן-חם) — בלי clip-gradient שפגע בקריאוּת */
+    color:#fff5d8;
+    -webkit-text-stroke:3.8px #20100a;   /* מתאר כהה עבה */
+    paint-order:stroke fill;
+    /* עומק תלת-ממדי: שכבות צל קשיחות מדורגות (1→5px) באותו חום-כהה + צל רך אחד מתחת */
+    text-shadow:
+      0 1px 0 #2c1505,
+      0 2px 0 #2c1505,
+      0 3px 0 #2c1505,
+      0 4px 0 #2c1505,
+      0 5px 0 #2c1505,
+      0 7px 10px rgba(0,0,0,.55);
+  }
+
+  .counter{
+    flex:1 1 auto; text-align:center;
+    font-family:'Rubik',sans-serif; font-weight:900;
+    color:#ffe9b0; font-size:clamp(.95rem,1.5vw,1.35rem);
+    -webkit-text-stroke:2px var(--wood-dark); paint-order:stroke fill;
+    text-shadow:0 2px 0 #4a2a10;
+  }
+  .counter b{ color:#fff; }
+
+  /* ===================== כפתורים — לוחיות עץ ===================== */
+  .btns{ display:flex; gap:9px; flex:0 0 auto; }
+  .btn3d{
+    font-family:'Rubik',sans-serif; font-weight:900;
+    font-size:clamp(.78rem,1.05vw,1rem);
+    color:#fff; -webkit-text-stroke:1.8px var(--wood-dark); paint-order:stroke fill;
+    text-shadow:0 2px 0 #2c1505;
+    border:3px solid var(--wood-dark); border-radius:14px;
+    padding:9px 17px; cursor:pointer; position:relative; white-space:nowrap;
+    background:
+      repeating-linear-gradient(90deg, rgba(0,0,0,.06) 0 5px, rgba(255,255,255,.05) 5px 10px),
+      linear-gradient(180deg,#b3712f,#8a4f22);
+    box-shadow:0 6px 0 #2c1505, 0 9px 15px rgba(0,0,0,.45), inset 0 2px 0 rgba(255,255,255,.28);
+    transition:transform .07s ease, box-shadow .07s ease, filter .12s;
+  }
+  .btn3d:hover{ filter:brightness(1.08); }
+  .btn3d:active{ transform:translateY(5px); box-shadow:0 1px 0 #2c1505, 0 3px 7px rgba(0,0,0,.4), inset 0 2px 0 rgba(255,255,255,.2); }
+  .btn-check  { background:repeating-linear-gradient(90deg, rgba(0,0,0,.06) 0 5px, rgba(255,255,255,.05) 5px 10px), linear-gradient(180deg,#62d06d,#2f8f3c); box-shadow:0 6px 0 #1c5a25, 0 9px 15px rgba(0,0,0,.45), inset 0 2px 0 rgba(255,255,255,.3); }
+  .btn-check:active  { box-shadow:0 1px 0 #1c5a25, 0 3px 7px rgba(0,0,0,.4), inset 0 2px 0 rgba(255,255,255,.2); }
+  .btn-shuffle{ background:repeating-linear-gradient(90deg, rgba(0,0,0,.06) 0 5px, rgba(255,255,255,.05) 5px 10px), linear-gradient(180deg,#ff9a3d,#d35e10); box-shadow:0 6px 0 #8a3d08, 0 9px 15px rgba(0,0,0,.45), inset 0 2px 0 rgba(255,255,255,.3); }
+  .btn-shuffle:active{ box-shadow:0 1px 0 #8a3d08, 0 3px 7px rgba(0,0,0,.4), inset 0 2px 0 rgba(255,255,255,.2); }
+  .btn-reset  { background:repeating-linear-gradient(90deg, rgba(0,0,0,.06) 0 5px, rgba(255,255,255,.05) 5px 10px), linear-gradient(180deg,#43b6ff,#1f78c8); box-shadow:0 6px 0 #0c4f86, 0 9px 15px rgba(0,0,0,.45), inset 0 2px 0 rgba(255,255,255,.3); }
+  .btn-reset:active  { box-shadow:0 1px 0 #0c4f86, 0 3px 7px rgba(0,0,0,.4), inset 0 2px 0 rgba(255,255,255,.2); }
+  .btn-fs     { background:repeating-linear-gradient(90deg, rgba(0,0,0,.06) 0 5px, rgba(255,255,255,.05) 5px 10px), linear-gradient(180deg,#caa24a,#9a7320); box-shadow:0 6px 0 #5e4512, 0 9px 15px rgba(0,0,0,.45), inset 0 2px 0 rgba(255,255,255,.3); }
+  .btn-fs:active     { box-shadow:0 1px 0 #5e4512, 0 3px 7px rgba(0,0,0,.4), inset 0 2px 0 rgba(255,255,255,.2); }
+  .btn-go     { background:repeating-linear-gradient(90deg, rgba(0,0,0,.06) 0 5px, rgba(255,255,255,.05) 5px 10px), linear-gradient(180deg,#7b6bff,#4f2fd3); box-shadow:0 6px 0 #2c1782, 0 9px 15px rgba(0,0,0,.45), inset 0 2px 0 rgba(255,255,255,.3); }
+  .btn-go:active     { box-shadow:0 1px 0 #2c1782, 0 3px 7px rgba(0,0,0,.4), inset 0 2px 0 rgba(255,255,255,.2); }
+
+  /* ===================== אזור הצניחה ===================== */
+  .dropzone{
+    flex:0 0 auto;
+    height:calc(var(--fall-img) + 92px);
+    position:relative;
+    display:flex; align-items:center; justify-content:center;
+  }
+  .dropzone .done-msg{
+    font-family:'Rubik',sans-serif; font-weight:900; color:#fff; text-align:center;
+    font-size:clamp(1rem,1.9vw,1.6rem);
+    -webkit-text-stroke:1.5px var(--wood-dark); paint-order:stroke fill;
+    background:linear-gradient(180deg,#62d06d,#2f8f3c);
+    border:3px solid var(--wood-dark);
+    padding:13px 32px; border-radius:16px;
+    box-shadow:0 7px 0 #1c5a25, 0 11px 20px rgba(0,0,0,.45);
+  }
+
+  /* הקלף הצונח — גדול ובולט */
+  .fall-card{
+    position:absolute; top:14px;
+    width:var(--fall-w);
+    background:var(--card-bg);
+    border-radius:20px; border:5px solid #fff;
+    box-shadow:0 16px 36px rgba(0,0,0,.45);
+    overflow:hidden; cursor:grab;
+    display:flex; flex-direction:column; user-select:none; touch-action:none;
+    animation:drop 1s cubic-bezier(.25,.9,.3,1.05);
+  }
+  .fall-card:active{ cursor:grabbing; }
+  .fall-card .label{
+    font-family:'Rubik',sans-serif; font-weight:900;
+    font-size:clamp(.95rem,1.45vw,1.35rem);
+    text-align:center; padding:11px 10px;
+    background:linear-gradient(135deg,#ffe7a3,#ffc8dd);
+    color:var(--ink); line-height:1.2;
+  }
+  .fall-card .img{
+    height:var(--fall-img); background:#fff;
+    display:flex; align-items:center; justify-content:center; padding:8px;
+  }
+  .fall-card .img img{ max-width:100%; max-height:100%; object-fit:contain; pointer-events:none; }
+
+  @keyframes drop{
+    0%   { transform:translateY(-130vh) rotate(-6deg); }
+    60%  { transform:translateY(0) rotate(0); }
+    74%  { transform:translateY(-24px); }
+    86%  { transform:translateY(0); }
+    93%  { transform:translateY(-7px); }
+    100% { transform:translateY(0); }
+  }
+
+  /* ===================== אזור הסידור (שורת 6 משבצות) ===================== */
+  .timeline-zone{
+    flex:1 1 auto; position:relative;
+    padding:2px 24px 16px;
+    display:flex; flex-direction:column;
+    background:linear-gradient(0deg, rgba(36,16,70,.55), rgba(36,16,70,.05));
+  }
+  .tl-title{
+    font-family:'Rubik',sans-serif; font-weight:900; color:#ffe9b0; text-align:center;
+    -webkit-text-stroke:1.4px var(--wood-dark); paint-order:stroke fill;
+    text-shadow:0 2px 0 #4a2a10;
+    font-size:clamp(.85rem,1.25vw,1.1rem); margin:0 0 6px;
+  }
+  .timeline{
+    position:relative; flex:1 1 auto;
+    display:flex; flex-direction:column; justify-content:center;
+    overflow:visible;
+  }
+  .road{ position:absolute; inset:0; z-index:0; pointer-events:none; overflow:visible; }
+
+  .lane{ display:flex; align-items:center; justify-content:space-evenly; gap:12px; overflow:visible; z-index:1; }
+
+  .slot{
+    width:var(--tl-card-w);
+    display:flex; flex-direction:column; align-items:center;
+    position:relative; overflow:visible;
+  }
+
+  /* שלט-עץ למספר השלב */
+  .step{
+    font-family:'Rubik',sans-serif; font-weight:900;
+    font-size:clamp(12px,1.2vw,17px);
+    color:#ffe9b0; -webkit-text-stroke:1.5px var(--wood-dark); paint-order:stroke fill;
+    text-shadow:0 2px 0 #4a2a10;
+    border:3px solid var(--wood-dark); border-radius:11px;
+    padding:2px 14px; margin-bottom:6px; white-space:nowrap;
+    background:
+      repeating-linear-gradient(90deg, rgba(0,0,0,.07) 0 4px, rgba(255,255,255,.05) 4px 8px),
+      linear-gradient(180deg,#a9682f,#7c451d);
+    box-shadow:0 3px 0 #2c1505, 0 5px 9px rgba(0,0,0,.4); z-index:3;
+  }
+  /* משבצת ראשונה (פתיחה) ירוקה, אחרונה (סיום) ורודה — רמז עדין לכיוון */
+  .lane .slot:first-child .step{
+    background:repeating-linear-gradient(90deg, rgba(0,0,0,.07) 0 4px, rgba(255,255,255,.05) 4px 8px), linear-gradient(180deg,#5bb85f,#2f7d3b);
+    border-color:#173f1c; color:#fff;
+  }
+  .lane .slot:last-child .step{
+    background:repeating-linear-gradient(90deg, rgba(0,0,0,.07) 0 4px, rgba(255,255,255,.05) 4px 8px), linear-gradient(180deg,#ff6fa3,#d83b77);
+    border-color:#7a1640; color:#fff;
+  }
+
+  .pad{
+    width:100%; min-height:calc(var(--tl-img-h) + 44px);
+    border:3px dashed rgba(255,255,255,.85);
+    border-radius:16px; background:rgba(255,255,255,.16);
+    display:flex; align-items:center; justify-content:center;
+    transition:border-color .12s, background .12s, transform .1s, box-shadow .12s;
+  }
+  .pad.dragover{
+    border-color:var(--yellow); border-style:solid;
+    background:rgba(255,194,51,.42); transform:scale(1.06);
+    box-shadow:0 0 0 4px rgba(255,194,51,.45), 0 8px 18px rgba(0,0,0,.4);
+  }
+  .pad .ph{ color:rgba(255,255,255,.85); font-size:1.7rem; }
+  .slot.correct .pad{ border-style:solid; border-color:var(--green); background:rgba(34,197,94,.3); }
+  .slot.wrong   .pad{ border-style:solid; border-color:var(--red);   background:rgba(255,59,59,.3); }
+
+  /* קלף קטן בשורה */
+  .tl-card{
+    width:100%;
+    background:var(--card-bg);
+    border-radius:14px; border:3px solid #fff;
+    box-shadow:0 5px 12px rgba(0,0,0,.4);
+    overflow:hidden; cursor:grab; user-select:none; touch-action:none;
+    transition:transform .16s cubic-bezier(.2,1.5,.4,1), box-shadow .16s;
+    transform-origin:center center;
+  }
+  .tl-card:hover{ transform:scale(1.9); z-index:60; box-shadow:0 20px 44px rgba(0,0,0,.55); border-color:var(--yellow); }
+  body.dragging .tl-card:hover{ transform:none; z-index:1; box-shadow:0 5px 12px rgba(0,0,0,.4); border-color:#fff; }
+  .tl-card .label{
+    font-family:'Rubik',sans-serif; font-weight:700;
+    font-size:clamp(10px,.95vw,13.5px);
+    text-align:center; padding:5px 4px; line-height:1.18;
+    background:linear-gradient(135deg,#ffe7a3,#ffc8dd); color:var(--ink);
+    min-height:2.6em; display:flex; align-items:center; justify-content:center;
+  }
+  .tl-card .img{ height:var(--tl-img-h); background:#fff; display:flex; align-items:center; justify-content:center; padding:4px; }
+  .tl-card .img img{ max-width:100%; max-height:100%; object-fit:contain; pointer-events:none; }
+  .slot.correct .tl-card{ border-color:var(--green); }
+  .slot.wrong   .tl-card{ border-color:var(--red); }
+
+  /* קלף-רפאים שנגרר עם הסמן */
+  .drag-ghost{
+    position:fixed; z-index:300; margin:0; pointer-events:none;
+    animation:none !important;
+    transform:rotate(-3deg) scale(1.04);
+    box-shadow:0 22px 42px rgba(0,0,0,.55);
+  }
+
+  /* ===================== חלקיקים / קונפטי ===================== */
+  #fx{ position:fixed; inset:0; pointer-events:none; z-index:170; }
+
+  /* ===================== מסך ניצחון ===================== */
+  .win{
+    position:fixed; inset:0; z-index:200;
+    display:none; align-items:center; justify-content:center;
+    flex-direction:column; gap:16px;
+    background:radial-gradient(circle at center, rgba(36,16,70,.5), rgba(15,6,32,.85));
+    backdrop-filter:blur(3px);
+  }
+  .win.show{ display:flex; animation:fadeIn .3s ease; }
+  .win img{
+    max-width:min(48vw,440px); max-height:42vh;
+    border-radius:24px; background:rgba(255,255,255,.95); padding:10px;
+    box-shadow:0 24px 70px rgba(0,0,0,.6);
+    animation:pop .55s cubic-bezier(.2,1.5,.45,1);
+  }
+  .win .greet, .stage3-end .greet{
+    font-family:'Rubik',sans-serif; font-weight:900;
+    color:#ffd24d; -webkit-text-stroke:2.5px var(--wood-dark); paint-order:stroke fill;
+    text-shadow:0 3px 0 #6b3d12;
+    background:linear-gradient(180deg,#fff7e0,#ffe39a);
+    -webkit-text-fill-color:initial;
+    font-size:clamp(1.2rem,2.4vw,1.9rem);
+    padding:12px 34px; border-radius:18px; border:4px solid var(--wood-dark);
+    box-shadow:0 8px 0 #6b3d12, 0 14px 24px rgba(0,0,0,.5);
+  }
+  .win-btns{ display:flex; gap:14px; flex-wrap:wrap; justify-content:center; }
+  @keyframes pop{ 0%{ transform:scale(.3); opacity:0; } 100%{ transform:scale(1); opacity:1; } }
+  @keyframes fadeIn{ from{opacity:0;} to{opacity:1;} }
+
+  /* ===================== שלב 2 — שאלון ===================== */
+  .quiz{
+    position:fixed; inset:0; z-index:210; overflow:hidden;
+    display:none; flex-direction:column; align-items:center; justify-content:center;
+    background:radial-gradient(circle at center, rgba(36,16,70,.62), rgba(15,6,32,.92));
+    backdrop-filter:blur(4px);
+  }
+  .quiz.show{ display:flex; animation:fadeIn .3s ease; }
+  .quiz-inner{
+    width:min(880px,94vw); height:100dvh;
+    padding:clamp(10px,2.5vh,26px) 0;
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    gap:clamp(9px,1.9vh,18px);
+  }
+  /* שלט-עץ למספר השאלה */
+  .q-progress{
+    font-family:'Rubik',sans-serif; font-weight:900;
+    font-size:clamp(12px,1.3vw,17px);
+    color:#ffe9b0; -webkit-text-stroke:1.5px var(--wood-dark); paint-order:stroke fill;
+    text-shadow:0 2px 0 #4a2a10;
+    border:3px solid var(--wood-dark); border-radius:11px;
+    padding:3px 18px; white-space:nowrap;
+    background:
+      repeating-linear-gradient(90deg, rgba(0,0,0,.07) 0 4px, rgba(255,255,255,.05) 4px 8px),
+      linear-gradient(180deg,#a9682f,#7c451d);
+    box-shadow:0 3px 0 #2c1505, 0 5px 9px rgba(0,0,0,.4);
+  }
+  /* קלף השאלה — קלף-קלף בגוון קלף (parchment) עם מסגרת עץ */
+  .q-card{
+    width:100%;
+    background:linear-gradient(180deg,#fff7e0,#ffe39a);
+    border:4px solid var(--wood-dark); border-radius:22px;
+    box-shadow:0 9px 0 #6b3d12, 0 16px 30px rgba(0,0,0,.5), inset 0 2px 0 rgba(255,255,255,.5);
+    padding:clamp(14px,2.6vh,26px) clamp(16px,2.4vw,32px);
+    display:flex; flex-direction:column; gap:clamp(10px,1.8vh,18px);
+  }
+  .q-text{
+    font-family:'Rubik',sans-serif; font-weight:900; text-align:center; color:var(--ink);
+    font-size:clamp(1.02rem,1.95vw,1.55rem); line-height:1.3;
+    text-shadow:0 2px 0 rgba(255,255,255,.6);
+  }
+  .q-text.summary{ font-weight:700; font-size:clamp(.98rem,1.75vw,1.4rem); line-height:1.6; padding:clamp(4px,1vh,10px) clamp(2px,1vw,14px); }
+  .q-body{ display:flex; flex-direction:column; gap:clamp(7px,1.25vh,12px); }
+  .opt{
+    font-family:'Rubik',sans-serif; font-weight:700;
+    font-size:clamp(.85rem,1.35vw,1.12rem); line-height:1.25;
+    color:#fff; -webkit-text-stroke:1.1px var(--wood-dark); paint-order:stroke fill;
+    text-shadow:0 2px 0 #2c1505;
+    border:3px solid var(--wood-dark); border-radius:14px;
+    padding:clamp(9px,1.5vh,15px) clamp(13px,1.5vw,20px);
+    cursor:pointer; text-align:right; width:100%;
+    display:flex; align-items:center; gap:10px;
+    background:
+      repeating-linear-gradient(90deg, rgba(0,0,0,.06) 0 5px, rgba(255,255,255,.05) 5px 10px),
+      linear-gradient(180deg,#b3712f,#8a4f22);
+    box-shadow:0 5px 0 #2c1505, 0 8px 13px rgba(0,0,0,.4), inset 0 2px 0 rgba(255,255,255,.25);
+    transition:transform .07s ease, box-shadow .07s ease, filter .12s, background .15s;
+  }
+  .opt .opt-mark{ flex:0 0 auto; width:1.3em; text-align:center; font-weight:900; -webkit-text-stroke:0; text-shadow:none; }
+  .opt .opt-txt{ flex:1 1 auto; }
+  .opt:not(.locked):hover{ filter:brightness(1.08); }
+  .opt:not(.locked):active{ transform:translateY(4px); box-shadow:0 1px 0 #2c1505, 0 3px 6px rgba(0,0,0,.4), inset 0 2px 0 rgba(255,255,255,.2); }
+  .opt.locked{ cursor:default; }
+  .opt.locked:not(.correct):not(.wrong):not(.chosen){ opacity:.72; filter:grayscale(.25) brightness(.9); }
+  /* בחירה בשאלת רפלקציה/עמדה — הדגשה ניטרלית (זהב), בלי "נכון/לא נכון" */
+  .opt.chosen{
+    background:linear-gradient(180deg,#ffe07a,#ffbe2e); color:var(--ink);
+    -webkit-text-stroke:0; text-shadow:0 1px 0 rgba(255,255,255,.5);
+    border-color:#7c451d; box-shadow:0 5px 0 #7c451d, 0 8px 13px rgba(0,0,0,.4), inset 0 2px 0 rgba(255,255,255,.4);
+  }
+  /* רק בשאלות עם תשובה עדיפה */
+  .opt.correct{
+    background:repeating-linear-gradient(90deg, rgba(0,0,0,.06) 0 5px, rgba(255,255,255,.05) 5px 10px), linear-gradient(180deg,#62d06d,#2f8f3c);
+    border-color:#1c5a25; box-shadow:0 5px 0 #1c5a25, 0 8px 13px rgba(0,0,0,.4), inset 0 2px 0 rgba(255,255,255,.3);
+  }
+  .opt.wrong{
+    background:repeating-linear-gradient(90deg, rgba(0,0,0,.06) 0 5px, rgba(255,255,255,.05) 5px 10px), linear-gradient(180deg,#ff6b6b,#d83030);
+    border-color:#7a1414; box-shadow:0 5px 0 #7a1414, 0 8px 13px rgba(0,0,0,.4), inset 0 2px 0 rgba(255,255,255,.25);
+  }
+  .q-feedback{
+    display:none; font-family:'Rubik',sans-serif; font-weight:700; color:var(--ink);
+    font-size:clamp(.85rem,1.4vw,1.15rem); line-height:1.3; text-align:center;
+    border:3px solid var(--wood-dark); border-radius:14px;
+    padding:clamp(9px,1.4vh,14px) clamp(14px,1.6vw,22px);
+    box-shadow:0 4px 0 rgba(0,0,0,.25);
+  }
+  .q-feedback.show{ display:block; animation:pop .35s cubic-bezier(.2,1.5,.45,1); }
+  .q-feedback.open{ background:linear-gradient(180deg,#fff3c8,#ffd98a); }
+  .q-feedback.good{ background:linear-gradient(180deg,#c2f0c8,#84d98f); border-color:#1c5a25; }
+  .q-feedback.bad{ background:linear-gradient(180deg,#ffd6d6,#ff9f9f); border-color:#7a1414; }
+
+  /* איור ליד השאלה */
+  .q-illus{ display:flex; justify-content:center; }
+  .q-illus img{
+    height:clamp(56px,11vh,124px); width:auto; max-width:44%; object-fit:contain;
+    background:#fff; border-radius:14px; border:3px solid var(--wood-dark); padding:5px;
+    box-shadow:0 4px 0 #6b3d12, 0 7px 14px rgba(0,0,0,.4);
+  }
+
+  /* ----- סרגל דירוג 1–10 ----- */
+  .scale-wrap{ display:flex; flex-direction:column; align-items:center; gap:clamp(8px,1.7vh,16px); padding:clamp(4px,1vh,10px) 0; }
+  .scale-val{
+    font-family:'Rubik',sans-serif; font-weight:900; color:var(--ink); line-height:1;
+    font-size:clamp(2rem,5.2vw,3.4rem); text-shadow:0 2px 0 rgba(255,255,255,.6);
+  }
+  .scale-range{
+    -webkit-appearance:none; appearance:none; width:min(560px,84%); height:16px; border-radius:10px;
+    background:linear-gradient(90deg,#62d06d,#ffc233,#ff7a18);
+    border:3px solid var(--wood-dark); box-shadow:inset 0 2px 4px rgba(0,0,0,.3);
+    outline:none; cursor:pointer;
+  }
+  .scale-range::-webkit-slider-thumb{
+    -webkit-appearance:none; appearance:none; width:30px; height:30px; border-radius:50%;
+    background:radial-gradient(circle at 35% 30%,#fff,#ffd98a 45%,#d98a1f); border:3px solid var(--wood-dark);
+    box-shadow:0 3px 0 #2c1505, 0 5px 8px rgba(0,0,0,.4); cursor:grab;
+  }
+  .scale-range::-moz-range-thumb{
+    width:30px; height:30px; border-radius:50%;
+    background:radial-gradient(circle at 35% 30%,#fff,#ffd98a 45%,#d98a1f); border:3px solid var(--wood-dark);
+    box-shadow:0 3px 0 #2c1505; cursor:grab;
+  }
+  .scale-range:disabled{ filter:grayscale(.2) brightness(.95); }
+  .scale-ends{
+    display:flex; justify-content:space-between; width:min(560px,84%);
+    font-family:'Rubik',sans-serif; font-weight:700; color:var(--ink);
+    font-size:clamp(.78rem,1.2vw,1rem); opacity:.85;
+  }
+
+  /* ----- גרירה לקטגוריה ----- */
+  .sort-wrap{ display:flex; flex-direction:column; gap:clamp(8px,1.5vh,14px); }
+  .sort-pool{
+    display:flex; flex-wrap:wrap; gap:7px; justify-content:center; align-items:center;
+    min-height:clamp(38px,6.5vh,60px);
+    border:3px dashed rgba(58,30,10,.35); border-radius:14px; padding:7px; background:rgba(255,255,255,.35);
+    transition:background .12s;
+  }
+  .sort-pool.zone-hot{ background:rgba(255,194,51,.5); }
+  .sort-cats{ display:flex; gap:clamp(8px,1.6vw,16px); }
+  .sort-cat{ flex:1 1 0; display:flex; flex-direction:column; gap:6px; min-width:0; }
+  .sort-cat-title{
+    font-family:'Rubik',sans-serif; font-weight:900; text-align:center; color:#fff;
+    -webkit-text-stroke:1.2px var(--wood-dark); paint-order:stroke fill; text-shadow:0 2px 0 #2c1505;
+    font-size:clamp(.82rem,1.35vw,1.12rem); padding:5px 8px; border-radius:11px; border:3px solid var(--wood-dark);
+    background:linear-gradient(180deg,#b3712f,#7c451d); box-shadow:0 3px 0 #2c1505;
+  }
+  .sort-cat:first-child .sort-cat-title{ background:linear-gradient(180deg,#5ba0e8,#2f6fc8); border-color:#0c4f86; }
+  .sort-cat:last-child  .sort-cat-title{ background:linear-gradient(180deg,#c98ae0,#9a4fc8); border-color:#5a2785; }
+  .sort-drop{
+    flex:1 1 auto; min-height:clamp(66px,14vh,148px);
+    border:3px dashed rgba(58,30,10,.4); border-radius:14px; padding:7px; background:rgba(255,255,255,.3);
+    display:flex; flex-direction:column; gap:6px; transition:background .12s, border-color .12s;
+  }
+  .sort-drop.zone-hot{ background:rgba(255,194,51,.5); border-color:var(--wood-dark); border-style:solid; }
+  .sort-note{
+    font-family:'Rubik',sans-serif; font-weight:700; color:#fff;
+    -webkit-text-stroke:.8px var(--wood-dark); paint-order:stroke fill; text-shadow:0 1px 0 #2c1505;
+    font-size:clamp(.76rem,1.2vw,1rem); line-height:1.2; text-align:center;
+    padding:7px 11px; border-radius:11px; border:3px solid var(--wood-dark);
+    cursor:grab; user-select:none; touch-action:none;
+    background:linear-gradient(180deg,#caa24a,#9a7320); box-shadow:0 3px 0 #5e4512, 0 5px 9px rgba(0,0,0,.35);
+  }
+  .sort-note.correct{ background:linear-gradient(180deg,#62d06d,#2f8f3c); border-color:#1c5a25; box-shadow:0 3px 0 #1c5a25; }
+  .sort-note.wrong{ background:linear-gradient(180deg,#ff6b6b,#d83030); border-color:#7a1414; box-shadow:0 3px 0 #7a1414; }
+  .note-ghost{ position:fixed; z-index:320; margin:0; pointer-events:none; transform:rotate(-3deg) scale(1.05); box-shadow:0 16px 30px rgba(0,0,0,.5); }
+  .sort-check{ align-self:center; margin-top:2px; }
+  .sort-check:disabled{ opacity:.55; filter:grayscale(.3); cursor:default; }
+
+  /* ===================== שלב 3 — ליקוט בילקוט ===================== */
+  .stage3{ position:fixed; inset:0; z-index:215; display:none; overflow:hidden;
+    background:linear-gradient(180deg, rgba(36,16,70,.26), rgba(36,16,70,.5)); }
+  .stage3.show{ display:block; }
+  .s3-hud{ position:absolute; top:0; left:0; right:0; z-index:5;
+    display:flex; align-items:flex-start; justify-content:space-between; gap:12px; padding:10px 18px; pointer-events:none; }
+  .s3-title{ flex:1 1 auto; text-align:center;
+    font-family:'Rubik','Suez One',sans-serif; font-weight:900; letter-spacing:.3px;
+    font-size:clamp(1rem,2.1vw,1.7rem); color:#fff5d8;
+    -webkit-text-stroke:3px #20100a; paint-order:stroke fill;
+    text-shadow:0 1px 0 #2c1505,0 2px 0 #2c1505,0 3px 0 #2c1505,0 4px 0 #2c1505,0 6px 9px rgba(0,0,0,.55);
+    padding:6px 14px; }
+  .s3-score{ flex:0 0 auto;
+    font-family:'Rubik',sans-serif; font-weight:900; font-size:clamp(.85rem,1.4vw,1.2rem);
+    color:#ffe9b0; -webkit-text-stroke:1.6px var(--wood-dark); paint-order:stroke fill; text-shadow:0 2px 0 #4a2a10;
+    border:3px solid var(--wood-dark); border-radius:12px; padding:5px 14px; white-space:nowrap;
+    background:repeating-linear-gradient(90deg, rgba(0,0,0,.07) 0 4px, rgba(255,255,255,.05) 4px 8px), linear-gradient(180deg,#a9682f,#7c451d);
+    box-shadow:0 3px 0 #2c1505, 0 5px 9px rgba(0,0,0,.4); }
+  .s3-field{ position:absolute; inset:0; z-index:1; }
+  .s3-item{ position:absolute; transform:translateX(-50%); max-width:clamp(150px,22vw,250px); text-align:center;
+    font-family:'Rubik',sans-serif; font-weight:900; font-size:clamp(.8rem,1.25vw,1.05rem); line-height:1.16;
+    color:#fff; -webkit-text-stroke:1.1px var(--wood-dark); paint-order:stroke fill; text-shadow:0 2px 0 #2c1505;
+    padding:9px 14px; border-radius:16px; border:3px solid #fff; box-shadow:0 7px 16px rgba(0,0,0,.42);
+    user-select:none; pointer-events:none; will-change:top,left; }
+  .s3-item.caught{ animation:s3pop .22s ease forwards; }
+  @keyframes s3pop{ to{ transform:translateX(-50%) scale(1.5); opacity:0; } }
+  .s3-bag{ position:absolute; bottom:8px; left:50%; transform:translateX(-50%);
+    font-size:clamp(60px,9.5vw,112px); line-height:1; z-index:3; user-select:none; pointer-events:none;
+    filter:drop-shadow(0 6px 5px rgba(0,0,0,.5)); will-change:left; }
+  .s3-flash{ position:absolute; inset:0; z-index:4; pointer-events:none; opacity:0; }
+  .s3-flash.green{ background:radial-gradient(circle at 50% 88%, rgba(34,197,94,.5), rgba(34,197,94,0) 70%); animation:s3flash .42s ease; }
+  .s3-flash.red{   background:radial-gradient(circle at 50% 88%, rgba(255,59,59,.55), rgba(255,59,59,0) 70%); animation:s3flash .42s ease; }
+  @keyframes s3flash{ 0%{opacity:0;} 25%{opacity:1;} 100%{opacity:0;} }
+  .s3-banner{ position:absolute; inset:0; z-index:6; display:none; align-items:center; justify-content:center; pointer-events:none; }
+  .s3-banner.show{ display:flex; }
+  .s3-banner span{ display:block; font-family:'Rubik','Suez One',sans-serif; font-weight:900; text-align:center;
+    font-size:clamp(1.2rem,2.6vw,2.1rem); color:#fff5d8; -webkit-text-stroke:3px #20100a; paint-order:stroke fill;
+    text-shadow:0 2px 0 #2c1505,0 3px 0 #2c1505,0 4px 0 #2c1505,0 6px 10px rgba(0,0,0,.5);
+    background:linear-gradient(180deg,#b3712f,#7c451d); border:4px solid var(--wood-dark); border-radius:18px;
+    padding:14px 34px; box-shadow:0 8px 0 #2c1505, 0 14px 26px rgba(0,0,0,.5); animation:pop .4s cubic-bezier(.2,1.5,.45,1); }
+  /* מסך סיום שלב 3 — בסגנון מסך הניצחון */
+  .stage3-end{ position:fixed; inset:0; z-index:230; display:none; align-items:center; justify-content:center; flex-direction:column; gap:18px;
+    background:radial-gradient(circle at center, rgba(36,16,70,.55), rgba(15,6,32,.9)); backdrop-filter:blur(3px); }
+  .stage3-end.show{ display:flex; animation:fadeIn .3s ease; }
+  .s3-endscore{ font-family:'Rubik',sans-serif; font-weight:900; color:#fff5d8;
+    font-size:clamp(1.3rem,3vw,2.3rem); -webkit-text-stroke:2px var(--wood-dark); paint-order:stroke fill;
+    text-shadow:0 2px 0 #2c1505, 0 4px 10px rgba(0,0,0,.5); }
+
+  /* ===================== הודעה צפה ===================== */
+  .toast{
+    position:fixed; bottom:8px; right:50%; transform:translateX(50%) translateY(20px);
+    font-family:'Rubik',sans-serif; font-weight:900;
+    color:#fff; -webkit-text-stroke:1.4px var(--wood-dark); paint-order:stroke fill;
+    background:linear-gradient(180deg,#b3712f,#7c451d);
+    border:3px solid var(--wood-dark);
+    font-size:1rem; padding:9px 22px; border-radius:14px;
+    box-shadow:0 6px 0 #2c1505, 0 12px 22px rgba(0,0,0,.45);
+    opacity:0; pointer-events:none; transition:opacity .25s, transform .25s; z-index:190;
+  }
+  .toast.show{ opacity:1; transform:translateX(50%) translateY(0); pointer-events:auto; cursor:pointer; }
+</style>
+</head>
+<body>
+<div class="game">
+
+  <!-- ===== HUD ===== -->
+  <header class="hud">
+    <div class="logo"><span class="logo-text">סדר השיעור — למידה מותאמת</span></div>
+    <div class="counter" id="counter">קלף 1 מתוך 6</div>
+    <div class="btns">
+      <button class="btn3d btn-check"   id="btnCheck">✓ בדיקה</button>
+      <button class="btn3d btn-shuffle" id="btnShuffle">🔀 ערבב</button>
+      <button class="btn3d btn-reset"   id="btnReset">↺ איפוס</button>
+    </div>
+  </header>
+
+  <!-- ===== אזור הצניחה ===== -->
+  <section class="dropzone" id="dropzone"></section>
+
+  <!-- ===== שורת הסידור ===== -->
+  <section class="timeline-zone">
+    <p class="tl-title">🧩 גררו כל קלף למקומו לפי סדר השיעור (1 = פתיחת השיעור ← 6 = סיום)</p>
+    <div class="timeline" id="timeline">
+      <svg class="road" id="road" xmlns="http://www.w3.org/2000/svg"></svg>
+    </div>
+  </section>
+</div>
+
+<canvas id="fx"></canvas>
+
+<!-- ===== מסך ניצחון ===== -->
+<div class="win" id="win">
+  <img id="winImg" alt="הודעת ניצחון">
+  <div class="greet">🎉 כל הכבוד! סידרת את השיעור נכון! 🎉</div>
+  <div class="win-btns">
+    <button class="btn3d btn-go"      id="btnContinue" style="font-size:1.15rem">המשך לשלב 3 ▶</button>
+    <button class="btn3d btn-shuffle" id="btnPlayAgain" style="font-size:1.05rem">↺ שחקו שוב</button>
+  </div>
+</div>
+
+<!-- ===== שלב 2 — שאלון ===== -->
+<div class="quiz" id="quiz">
+  <div class="quiz-inner">
+    <div class="q-progress" id="qProgress">שאלה 1 מתוך 10</div>
+    <div class="q-card" id="qCard">
+      <div class="q-illus" id="qIllus" style="display:none"></div>
+      <div class="q-text" id="qText"></div>
+      <div class="q-body" id="qBody"></div>
+      <div class="q-feedback" id="qFeedback"></div>
+    </div>
+    <button class="btn3d btn-go" id="btnNext"   style="font-size:1.1rem">הבא ▶</button>
+    <button class="btn3d btn-go" id="btnStage3" style="font-size:1.1rem; display:none">המשך לשלב 4 ▶</button>
+  </div>
+</div>
+
+<!-- ===== שלב 3 — ליקוט בילקוט ===== -->
+<div class="stage3" id="stage3">
+  <div class="s3-hud">
+    <div class="s3-title" id="s3Title"></div>
+    <div class="s3-score" id="s3Score">⭐ ניקוד: 0</div>
+  </div>
+  <div class="s3-field" id="s3Field"></div>
+  <div class="s3-bag" id="s3Bag">🎒</div>
+  <div class="s3-flash" id="s3Flash"></div>
+  <div class="s3-banner" id="s3Banner"></div>
+</div>
+
+<!-- ===== מסך סיום שלב 3 ===== -->
+<div class="stage3-end" id="stage3End">
+  <div class="greet" id="s3EndMsg"></div>
+  <div class="s3-endscore" id="s3EndScore"></div>
+  <button class="btn3d btn-shuffle" id="btnS3Again" style="font-size:1.15rem">↺ שחק שוב</button>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* =========================================================
+   שלב 1 — סידור 6 קלפים לפי סדר השיעור בלמידה מותאמת.
+   index 0 = הצעד הראשון (פתיחה) ... index 5 = הצעד האחרון (סיום).
+   התמונות נמצאות בתיקייה images2/ (ממוספרות 1–12).
+   ========================================================= */
+const CARDS = [
+  { text:'ממלא "כרטיס כניסה" לשיעור',            file:"6.png"  }, // 1 — פתיחה
+  { text:"המורה מסבירה את משימות היום",          file:"3.png"  }, // 2
+  { text:"בודק כמה התקדם ומה יקדם היום",          file:"4.png"  }, // 3
+  { text:"בוחר בין המשימות",                     file:"9.png"  }, // 4
+  { text:"מסמן שסיים / מגיש משימה",               file:"12.png" }, // 5
+  { text:'ממלא "כרטיס יציאה" מהשיעור',            file:"1.png"  }  // 6 — סיום
+];
+
+const WIN_IMAGE = "הודעת ניצחון.png";   // משותף עם המשחק הראשון
+const BG_IMAGE  = "רקע מעודכן.png";      // אותו רקע + שכבת גוון שונה (body::before)
+const N = CARDS.length;
+
+const img2Path = (name)=> "images2/" + encodeURIComponent(name);  // קלפי שלב זה
+const bgPath   = (name)=> "images/"  + encodeURIComponent(name);  // רקע ותמונת ניצחון
+document.body.style.backgroundImage = 'url("'+bgPath(BG_IMAGE)+'")';
+
+/* ---------- מצב המשחק ---------- */
+let slots   = new Array(N).fill(null);  // slots[i] = id או null
+let queue   = [];                        // קלפים שעוד לא צנחו (אקראי)
+let current = null;                       // הקלף שנמצא כעת באזור הצניחה
+
+/* ---------- כלי עזר ---------- */
+function shuffled(a){ a=a.slice(); for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];} return a; }
+const placedCount = ()=> slots.filter(x=>x!==null).length;
+
+/* ---------- אלמנטים ---------- */
+const dropzoneEl   = document.getElementById('dropzone');
+const timelineEl   = document.getElementById('timeline');
+const timelineZone = document.querySelector('.timeline-zone');
+const roadSvg      = document.getElementById('road');
+const counterEl    = document.getElementById('counter');
+let slotPads = [], slotEls = [];
+
+/* ---------- בניית שורת המשבצות (פעם אחת) ---------- */
+function buildTimeline(){
+  [...timelineEl.querySelectorAll('.lane')].forEach(l=>l.remove());
+  slotPads = []; slotEls = [];
+  const lane = document.createElement('div');
+  lane.className = 'lane';
+  for(let i=0;i<N;i++){
+    const slot = document.createElement('div');
+    slot.className='slot'; slot.dataset.index=i;
+    slot.innerHTML = '<div class="step">'+(i+1)+'</div>';
+    const pad = document.createElement('div');
+    pad.className='pad'; pad.dataset.index=i;
+    slot.appendChild(pad);
+    lane.appendChild(slot);
+    slotEls[i]=slot; slotPads[i]=pad;
+  }
+  timelineEl.appendChild(lane);
+}
+
+/* ---------- רינדור תוכן ---------- */
+function makeTlCard(id){
+  const c=CARDS[id];
+  const el=document.createElement('div');
+  el.className='tl-card'; el.dataset.id=id;
+  el.innerHTML='<div class="label">'+c.text+'</div><div class="img"><img src="'+img2Path(c.file)+'" alt="'+c.text+'"></div>';
+  el.addEventListener('pointerdown', e=> startDrag(e,'slot',id));
+  return el;
+}
+function renderSlots(){
+  for(let i=0;i<N;i++){
+    const pad=slotPads[i]; pad.innerHTML='';
+    if(slots[i]===null) pad.innerHTML='<span class="ph">＋</span>';
+    else pad.appendChild(makeTlCard(slots[i]));
+  }
+}
+function spawnFallingCard(){
+  dropzoneEl.innerHTML='';
+  if(current===null){
+    const m=document.createElement('div'); m.className='done-msg';
+    m.textContent='כל הקלפים הונחו! לחצו ✓ בדיקה';
+    dropzoneEl.appendChild(m);
+    return;
+  }
+  const id=current, c=CARDS[id];
+  const el=document.createElement('div');
+  el.className='fall-card'; el.dataset.id=id; el.id='fallCard';
+  el.innerHTML='<div class="label">'+c.text+'</div><div class="img"><img src="'+img2Path(c.file)+'" alt="'+c.text+'"></div>';
+  el.addEventListener('pointerdown', e=> startDrag(e,'fall',id));
+  dropzoneEl.appendChild(el);
+}
+function updateCounter(){
+  counterEl.innerHTML = current!==null
+    ? 'קלף <b>'+(placedCount()+1)+'</b> מתוך '+N
+    : '<b>'+N+'</b> / '+N+' — מוכן לבדיקה ✓';
+}
+
+/* =========================================================
+   מנוע גרירה מבוסס-מצביע (pointer) — מדויק לפי מרכז הקלף
+   (זהה למשחק הראשון: הוצאה והזזה, החלפה, יעד לפי מרכז הקלף)
+   ========================================================= */
+let drag = null;
+function startDrag(e, kind, id){
+  if(e.button!==undefined && e.button!==0) return;   // לחצן שמאלי בלבד
+  e.preventDefault();
+  const src = e.currentTarget;
+  const rect = src.getBoundingClientRect();
+
+  const ghost = src.cloneNode(true);
+  ghost.classList.add('drag-ghost');
+  ghost.style.width = rect.width+'px';
+  ghost.style.left  = rect.left+'px';
+  ghost.style.top   = rect.top+'px';
+  document.body.appendChild(ghost);
+
+  src.style.visibility='hidden';
+  document.body.classList.add('dragging');
+
+  drag = {
+    kind, id,
+    from: (kind==='slot' ? slots.indexOf(id) : -1),
+    src, ghost, w:rect.width, h:rect.height,
+    offX:e.clientX-rect.left, offY:e.clientY-rect.top,
+    startLeft:rect.left, startTop:rect.top,
+    padRects: slotPads.map(p=>p.getBoundingClientRect()),
+    tlzTop: timelineZone.getBoundingClientRect().top,
+    target:-1
+  };
+  audio(); blip(kind==='fall'?600:520, .05, 'square', .05);
+  window.addEventListener('pointermove', onMove);
+  window.addEventListener('pointerup',   onUp);
+}
+function slotAtPoint(cx, cy){
+  if(cy < drag.tlzTop - 8) return -1;                // מעל אזור הסידור → ביטול
+  const R = drag.padRects;
+  for(let i=0;i<R.length;i++){ const r=R[i]; if(cx>=r.left&&cx<=r.right&&cy>=r.top&&cy<=r.bottom) return i; }
+  let best=-1, bd=Infinity;                          // אחרת — הקרובה ביותר למרכז הקלף
+  for(let i=0;i<R.length;i++){ const r=R[i]; const dx=cx-(r.left+r.width/2), dy=cy-(r.top+r.height/2); const d=dx*dx+dy*dy; if(d<bd){bd=d;best=i;} }
+  return best;
+}
+function onMove(e){
+  if(!drag) return;
+  const left=e.clientX-drag.offX, top=e.clientY-drag.offY;
+  drag.ghost.style.left=left+'px'; drag.ghost.style.top=top+'px';
+  const cx=left+drag.w/2, cy=top+drag.h/2;
+  const t=slotAtPoint(cx,cy);
+  if(t!==drag.target){
+    if(drag.target>=0) slotPads[drag.target].classList.remove('dragover');
+    drag.target=t;
+    if(t>=0) slotPads[t].classList.add('dragover');
+  }
+}
+function onUp(){
+  if(!drag) return;
+  window.removeEventListener('pointermove', onMove);
+  window.removeEventListener('pointerup',   onUp);
+  const {kind, id, from, target:t} = drag;
+  if(t>=0) slotPads[t].classList.remove('dragover');
+
+  if(t<0 || (kind==='slot' && t===from)){ // ביטול → חזרה למקור
+    snapGhost(drag.startLeft, drag.startTop, ()=>{ endGhost(); renderSlots(); });
+    return;
+  }
+
+  // עדכון מצב הנתונים
+  const occ = slots[t];
+  if(kind==='fall'){
+    if(occ===null){ slots[t]=id; current = queue.length ? queue.shift() : null; }
+    else          { slots[t]=id; current = occ; }            // הקלף הקודם חוזר לאזור הצניחה
+  }else{
+    if(occ===null){ slots[t]=id; slots[from]=null; }
+    else          { slots[t]=id; slots[from]=occ; }          // החלפה (swap)
+  }
+
+  // snap חלק למרכז המשבצת, ואז סיום
+  const r=drag.padRects[t];
+  const tx=r.left+r.width/2-drag.w/2, ty=r.top+r.height/2-drag.h/2;
+  snapGhost(tx, ty, ()=>{
+    endGhost();
+    renderSlots(); updateCounter();
+    landingBurst(slotPads[t]); dropSound();
+    if(kind==='fall') spawnFallingCard();
+  });
+}
+function snapGhost(x, y, cb){
+  const g=drag.ghost;
+  g.style.transition='left .16s ease, top .16s ease';
+  g.style.left=x+'px'; g.style.top=y+'px';
+  let done=false; const fin=()=>{ if(done) return; done=true; cb(); };
+  g.addEventListener('transitionend', fin, {once:true});
+  setTimeout(fin, 210);
+}
+function endGhost(){
+  if(drag){ if(drag.ghost) drag.ghost.remove(); if(drag.src) drag.src.style.visibility=''; }
+  document.body.classList.remove('dragging');
+  drag=null;
+}
+
+/* ---------- בדיקה ---------- */
+function check(){
+  blip(440,.06,'sine',.05);
+  let n=0;
+  for(let i=0;i<N;i++){
+    slotEls[i].classList.remove('correct','wrong');
+    if(slots[i]===null) continue;
+    if(slots[i]===i){ slotEls[i].classList.add('correct'); n++; }
+    else slotEls[i].classList.add('wrong');
+  }
+  if(n===N){ winSound(); fireConfetti(); setTimeout(showWin,500); }
+  else toast('נכונים: '+n+' מתוך '+N+' — נסו שוב 💪');
+}
+
+/* ---------- ניצחון ---------- */
+function showWin(){ const img=document.getElementById('winImg'); if(!img.src) img.src=bgPath(WIN_IMAGE); document.getElementById('win').classList.add('show'); }
+function hideWin(){ document.getElementById('win').classList.remove('show'); }
+
+/* ---------- הודעה צפה ---------- */
+let toastTimer=null;
+function toast(msg, ms){ const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show'); clearTimeout(toastTimer); toastTimer=setTimeout(()=>t.classList.remove('show'), ms||2600); }
+document.getElementById('toast').addEventListener('click', ()=>{ clearTimeout(toastTimer); document.getElementById('toast').classList.remove('show'); });
+
+/* ---------- פעולות ---------- */
+function newGame(){
+  slots=new Array(N).fill(null);
+  const order=shuffled(CARDS.map((_,i)=>i));
+  current=order.shift(); queue=order;
+  slotEls.forEach(s=>s.classList.remove('correct','wrong'));
+  renderSlots(); updateCounter(); spawnFallingCard();
+  requestAnimationFrame(drawRoad);
+}
+document.getElementById('btnCheck').addEventListener('click',()=>{ click3d(); check(); });
+document.getElementById('btnShuffle').addEventListener('click',()=>{ click3d(); newGame(); toast('עורבב מחדש 🔀'); });
+document.getElementById('btnReset').addEventListener('click',()=>{ click3d(); newGame(); toast('המשחק אופס ↺'); });
+document.getElementById('btnPlayAgain').addEventListener('click',()=>{ click3d(); hideWin(); newGame(); });
+/* כפתור "המשך" — פותח את שלב 2 (השאלון) */
+document.getElementById('btnContinue').addEventListener('click',()=>{ click3d(); openQuiz(); });
+document.getElementById('win').addEventListener('click',e=>{ if(e.target.id==='win') hideWin(); });
+
+/* =========================================================
+   שלב 2 — שאלון (שלושה סוגי שאלות)
+   type:'mc'    = רב-ברירה. אם open:true → עמדה/רפלקציה (ללא נכון/לא, רק משוב).
+                  אחרת → תשובה עדיפה: האפשרות עם ok:true מסומנת ירוק + הסבר,
+                  והבחירה השגויה מסומנת אדום. ⚠ הנכונה נקבעת לפי הדגל ok של
+                  האפשרות שנלחצה בפועל — לא לפי מיקום (האפשרויות מעורבבות).
+   type:'scale' = סרגל 1–10, שאלת עמדה. אין נכון/לא; משוב לפי הערך.
+   type:'sort'  = גרירת פתקים לשתי קטגוריות; משוב לפי נכונות השיוך.
+   ========================================================= */
+const QUIZ = [
+  // ש1 — רב-ברירה, רפלקציה (ללא נכון/לא)
+  { type:'mc', open:true, img:'3.png',
+    q:'למה סידרת את הקלפים כפי שסידרת?',
+    options:[
+      { t:'חשבתי על מה שפותח שיעור ומה שמסיים אותו' },
+      { t:'הסתמכתי על שיעור אמיתי שאני מכיר' },
+      { t:'ניסיתי, בדקתי, ותיקנתי תוך כדי' },
+      { t:'הלכתי לפי תחושת הבטן שלי' } ],
+    feedback:'יפה שעצרת לחשוב על זה — אין דרך אחת נכונה לחשוב על סדר השיעור.' },
+
+  // ש2 — סרגל 1–10, עמדה
+  { type:'scale',
+    q:'עד כמה הרגשת בטוח בסדר שבחרת?',
+    lo:'1 = בכלל לא', hi:'10 = לגמרי',
+    loMsg:'זה בסדר גמור להתלבט — ככה בדיוק לומדים.',
+    midMsg:'הביטחון נבנה תוך כדי — אתה בדרך הנכונה.',
+    hiMsg:'יפה — אתה מזהה היטב את מהלך השיעור.' },
+
+  // ש3 — רב-ברירה, תשובה עדיפה (ב')
+  { type:'mc', img:'7.png',
+    q:'מה ההבדל המרכזי בין השיעור הראשון לשני?',
+    options:[
+      { t:'בראשון המורה מובילה את כולם יחד באותה דרך' },
+      { t:'בשני לכל תלמיד יותר אחריות ובחירה בדרך הלמידה', ok:true },
+      { t:'בשני התלמידים לומדים פחות חומר מהראשון' },
+      { t:'בראשון יש מורה ובשני התלמידים לבד לגמרי' } ],
+    explain:'בשיעור השני לכל תלמיד יותר אחריות ובחירה בדרך הלמידה — זה הלב של למידה מותאמת.' },
+
+  // ש4 — רב-ברירה, תשובה עדיפה (א')
+  { type:'mc', img:'2.png',
+    q:'מתי דווקא עדיף ללמוד לבד ולא בקבוצה?',
+    options:[
+      { t:'כשצריך ריכוז שקט או להתקדם בקצב אישי', ok:true },
+      { t:'כשהנושא קל ולא דורש מאמץ' },
+      { t:'כשאין חברים פנויים באותו רגע' },
+      { t:'כשרוצים לסיים כמה שיותר מהר' } ],
+    explain:'למידה לבד מתאימה כשצריך ריכוז שקט או קצב אישי — לא כקיצור-דרך.' },
+
+  // ש5 — גרירה לקטגוריה
+  { type:'sort',
+    q:'מתי למידה משותפת מועילה, ומתי היא רק מפגש חברתי? גררו כל פתק לקטגוריה המתאימה.',
+    img:'5.png',
+    cats:['למידה מועילה','רק חברתי'],
+    notes:[
+      { t:'עוזרים זה לזה להבין את המשימה', cat:0 },
+      { t:'מתקדמים ויש תוצר משותף',        cat:0 },
+      { t:'מסבירים רעיון לחבר שלא הבין',    cat:0 },
+      { t:'מדברים על דברים אחרים לגמרי',    cat:1 },
+      { t:'אף אחד לא מתקדם במשימה',         cat:1 } ] },
+
+  // ש6 — רב-ברירה, תשובה עדיפה (א')
+  { type:'mc', img:'4.png',
+    q:'מה מאפשר לתלמיד שיעור שמטיל עליו יותר אחריות?',
+    options:[
+      { t:'להתקדם בקצב ובדרך שמתאימים לו ולפתח עצמאות', ok:true },
+      { t:'להחליט מתי בא לו להקשיב ומתי לא' },
+      { t:'לעבור את השיעור בלי מאמץ מיוחד' },
+      { t:'להישען על המורה פחות ועל חברים יותר' } ],
+    explain:'אחריות אישית מאפשרת קצב ודרך שמתאימים לך, ומפתחת עצמאות בלמידה.' },
+
+  // ש7 — רב-ברירה, תשובה עדיפה (א')
+  { type:'mc', img:'10.png',
+    q:'כיצד תלמיד יכול לתרום לשיעור, ולא רק המורה?',
+    options:[
+      { t:'להסביר לחבר רעיון שהבין ולעבוד בקבוצה', ok:true },
+      { t:'לשמור על השקט כדי שלא יפריעו למורה' },
+      { t:'לסיים את המשימות שלו לפני כולם' },
+      { t:'לעזור למורה לחלק דפים ולארגן' } ],
+    explain:'התרומה הלימודית האמיתית היא לשתף הבנה — להסביר לחבר ולעבוד יחד.' },
+
+  // ש8 — סרגל 1–10, עמדה (מעודד בכל ערך)
+  { type:'scale', img:'8.png',
+    q:'עד כמה אתה מרגיש מוכן לקחת אחריות על הלמידה שלך?',
+    lo:'1 = עוד לא', hi:'10 = לגמרי',
+    loMsg:'מתחילים מאיפה שאתה — וזה בדיוק בסדר.',
+    midMsg:'אתה בדרך — אחריות נבנית בהדרגה.',
+    hiMsg:'אחלה — אתה מרגיש מוכן לקחת אחריות על הלמידה שלך!' },
+
+  // ש9 — גרירה לקטגוריה
+  { type:'sort',
+    q:'אילו דרכי למידה מתאימות לאיזה מצב? גררו כל פתק לקטגוריה המתאימה.',
+    img:'9.png',
+    cats:['מתאים ללמידה לבד','מתאים ללמידה משותפת'],
+    notes:[
+      { t:'להתרכז במשימה שדורשת שקט', cat:0 },
+      { t:'להתקדם בקצב אישי',          cat:0 },
+      { t:'לשמוע רעיונות שונים על בעיה', cat:1 },
+      { t:'להסביר ולקבל הסבר מחבר',     cat:1 } ] },
+
+  // ש10 — רב-ברירה, סיכום עמדה (ללא נכון/לא)
+  { type:'mc', open:true, img:'11.png',
+    q:'איזו דרך למידה הכי עוזרת לך אישית?',
+    options:[
+      { t:'ללמוד לבד בשקט' },
+      { t:'ללמוד בקבוצה עם חברים' },
+      { t:'ללמוד בעזרת המחשב' },
+      { t:'שילוב משתנה לפי המצב' } ],
+    feedback:'אין דרך אחת נכונה — ב-720 תוכל לשלב את מה שמתאים לך.' }
+];
+
+const SUMMARY_TEXT = 'בתכנית 720 יהיו חלקים שבהם תלמדו בצורה מעט שונה ממה שאתם מכירים, לצד הרבה דברים שיישארו מוכרים. המטרה היא להוסיף עוד דרכי למידה שיכולות לעזור לתלמידים שונים במצבים שונים.';
+
+const quizEl      = document.getElementById('quiz');
+const qProgressEl = document.getElementById('qProgress');
+const qTextEl     = document.getElementById('qText');
+const qIllusEl    = document.getElementById('qIllus');
+const qBodyEl     = document.getElementById('qBody');
+const qFeedbackEl = document.getElementById('qFeedback');
+const btnNext     = document.getElementById('btnNext');
+const btnStage3   = document.getElementById('btnStage3');
+let qIndex = 0;
+
+function openQuiz(){ hideWin(); qIndex=0; quizEl.classList.add('show'); renderQuestion(); postJourney({type:'stage', n:3, title:'שאלון'}); }
+
+/* ---------- כלי-עזר משותפים לשאלון ---------- */
+function setFeedback(mode, text){ qFeedbackEl.className='q-feedback show '+mode; qFeedbackEl.textContent=text; }
+function showNext(){ btnNext.textContent=(qIndex===QUIZ.length-1)?'לסיכום ▶':'הבא ▶'; btnNext.style.display=''; }
+
+function renderQuestion(){
+  const Q=QUIZ[qIndex];
+  qProgressEl.style.display=''; qProgressEl.textContent='שאלה '+(qIndex+1)+' מתוך '+QUIZ.length;
+  qTextEl.className='q-text'; qTextEl.textContent=Q.q;
+  if(Q.img){ qIllusEl.style.display=''; qIllusEl.innerHTML='<img src="'+img2Path(Q.img)+'" alt="">'; }
+  else     { qIllusEl.style.display='none'; qIllusEl.innerHTML=''; }
+  qFeedbackEl.className='q-feedback'; qFeedbackEl.textContent='';
+  btnNext.style.display='none'; btnStage3.style.display='none';
+  qBodyEl.innerHTML='';
+  if(Q.type==='scale')      renderScale(Q);
+  else if(Q.type==='sort')  renderSort(Q);
+  else                      renderMC(Q);
+}
+
+/* ---------- רב-ברירה ---------- */
+function renderMC(Q){
+  const order=shuffled(Q.options);   // ערבוב מיקומים — אי-אפשר לזהות לפי מקום
+  const refs=[];
+  order.forEach(o=>{
+    const b=document.createElement('button');
+    b.className='opt'; b.type='button';
+    b.innerHTML='<span class="opt-mark"></span><span class="opt-txt">'+o.t+'</span>';
+    b.addEventListener('click',()=>pickMC(Q,o,b,refs));
+    qBodyEl.appendChild(b);
+    refs.push({b,o});
+  });
+}
+function pickMC(Q, chosen, btn, refs){
+  refs.forEach(r=>{ r.b.disabled=true; r.b.classList.add('locked'); });
+  audio();
+  if(Q.open){
+    // עמדה/רפלקציה — כל בחירה מתקבלת, ללא ירוק/אדום
+    btn.classList.add('chosen'); btn.querySelector('.opt-mark').textContent='✓';
+    setFeedback('open','💭 '+Q.feedback);
+    blip(560,.12,'triangle',.05);
+  }else{
+    // תשובה עדיפה — נכונות נקבעת לפי הדגל ok של הכפתור שנלחץ בפועל
+    const isCorrect = chosen.ok===true;
+    refs.forEach(r=>{ if(r.o.ok){ r.b.classList.add('correct'); r.b.querySelector('.opt-mark').textContent='✔'; } });
+    if(!isCorrect){ btn.classList.add('wrong'); btn.querySelector('.opt-mark').textContent='✗'; }
+    if(isCorrect){ setFeedback('good','✓ נכון! '+Q.explain); blip(680,.14,'triangle',.06); }
+    else         { setFeedback('bad','✗ לא מדויק. התשובה הנכונה מסומנת בירוק — '+Q.explain); blip(300,.2,'sawtooth',.05); }
+  }
+  showNext();
+}
+
+/* ---------- סרגל דירוג 1–10 ---------- */
+function renderScale(Q){
+  const wrap=document.createElement('div'); wrap.className='scale-wrap';
+  wrap.innerHTML=
+    '<div class="scale-val">5</div>'+
+    '<input type="range" min="1" max="10" step="1" value="5" class="scale-range">'+
+    '<div class="scale-ends"><span>'+Q.lo+'</span><span>'+Q.hi+'</span></div>'+
+    '<button class="btn3d btn-go scale-confirm" type="button">אישור ✓</button>';
+  qBodyEl.appendChild(wrap);
+  const range=wrap.querySelector('.scale-range');
+  const val=wrap.querySelector('.scale-val');
+  const confirm=wrap.querySelector('.scale-confirm');
+  range.addEventListener('input',()=>{ val.textContent=range.value; });
+  confirm.addEventListener('click',()=>{
+    range.disabled=true; confirm.disabled=true; confirm.classList.add('locked');
+    const v=+range.value;
+    const msg = v<=4 ? Q.loMsg : (v>=8 ? Q.hiMsg : Q.midMsg);
+    audio(); blip(560,.12,'triangle',.05);
+    setFeedback('open','💭 '+msg);
+    showNext();
+  });
+}
+
+/* ---------- גרירת פתקים לקטגוריות ---------- */
+let nDrag=null, sortDone=false;
+function renderSort(Q){
+  sortDone=false;
+  const wrap=document.createElement('div'); wrap.className='sort-wrap';
+  const pool=document.createElement('div'); pool.className='sort-pool';
+  const cats=document.createElement('div'); cats.className='sort-cats';
+  Q.cats.forEach((c,ci)=>{
+    const cat=document.createElement('div'); cat.className='sort-cat';
+    cat.innerHTML='<div class="sort-cat-title">'+c+'</div>';
+    const drop=document.createElement('div'); drop.className='sort-drop'; drop.dataset.cat=ci;
+    cat.appendChild(drop); cats.appendChild(cat);
+  });
+  const chk=document.createElement('button');
+  chk.className='btn3d btn-check sort-check'; chk.type='button'; chk.textContent='בדיקה ✓'; chk.disabled=true;
+  wrap.appendChild(pool); wrap.appendChild(cats); wrap.appendChild(chk);
+  qBodyEl.appendChild(wrap);
+  shuffled(Q.notes).forEach(n=>{
+    const el=document.createElement('div'); el.className='sort-note'; el.textContent=n.t; el.dataset.cat=n.cat;
+    el.addEventListener('pointerdown', e=> startNoteDrag(e, el));
+    pool.appendChild(el);
+  });
+  chk.addEventListener('click',()=> checkSort(Q, wrap, chk));
+}
+function updateSortCheck(wrap){
+  const chk=wrap.querySelector('.sort-check');
+  const total=wrap.querySelectorAll('.sort-note').length;
+  const placed=wrap.querySelectorAll('.sort-drop .sort-note').length;
+  chk.disabled = placed<total;
+}
+function startNoteDrag(e, el){
+  if(sortDone) return;
+  if(e.button!==undefined && e.button!==0) return;
+  e.preventDefault();
+  const r=el.getBoundingClientRect();
+  const ghost=el.cloneNode(true); ghost.classList.add('note-ghost');
+  ghost.style.width=r.width+'px'; ghost.style.left=r.left+'px'; ghost.style.top=r.top+'px';
+  document.body.appendChild(ghost);
+  el.style.visibility='hidden'; document.body.classList.add('dragging');
+  nDrag={ el, ghost, offX:e.clientX-r.left, offY:e.clientY-r.top };
+  audio(); blip(520,.05,'square',.05);
+  window.addEventListener('pointermove', onNoteMove);
+  window.addEventListener('pointerup',   onNoteUp);
+}
+function zoneAt(x,y){ const t=document.elementFromPoint(x,y); return t && t.closest('.sort-drop, .sort-pool'); }
+function onNoteMove(e){
+  if(!nDrag) return;
+  nDrag.ghost.style.left=(e.clientX-nDrag.offX)+'px';
+  nDrag.ghost.style.top =(e.clientY-nDrag.offY)+'px';
+  const z=zoneAt(e.clientX,e.clientY);
+  document.querySelectorAll('.sort-drop, .sort-pool').forEach(d=>d.classList.toggle('zone-hot', d===z));
+}
+function onNoteUp(e){
+  if(!nDrag) return;
+  window.removeEventListener('pointermove', onNoteMove);
+  window.removeEventListener('pointerup',   onNoteUp);
+  const z=zoneAt(e.clientX,e.clientY);
+  document.querySelectorAll('.sort-drop, .sort-pool').forEach(d=>d.classList.remove('zone-hot'));
+  const el=nDrag.el;
+  nDrag.ghost.remove(); el.style.visibility=''; document.body.classList.remove('dragging');
+  nDrag=null;
+  if(z){ z.appendChild(el); dropSound(); }
+  const wrap=el.closest('.sort-wrap'); if(wrap) updateSortCheck(wrap);
+}
+function checkSort(Q, wrap, chk){
+  if(sortDone) return; sortDone=true;
+  let ok=0; const total=Q.notes.length;
+  wrap.querySelectorAll('.sort-drop').forEach(drop=>{
+    const placedCat=+drop.dataset.cat;
+    drop.querySelectorAll('.sort-note').forEach(note=>{
+      note.style.cursor='default';
+      if(+note.dataset.cat===placedCat){ note.classList.add('correct'); ok++; }
+      else note.classList.add('wrong');
+    });
+  });
+  chk.disabled=true; chk.classList.add('locked');
+  audio();
+  if(ok===total){ setFeedback('good','✓ מצוין! כל ה־'+total+' שובצו נכון.'); blip(680,.14,'triangle',.06); }
+  else          { setFeedback('bad','שובצו נכון '+ok+' מתוך '+total+'. הירוקים במקום — על האדומים כדאי לחשוב שוב.'); blip(360,.16,'sine',.05); }
+  showNext();
+}
+
+/* ---------- ניווט וסיכום ---------- */
+btnNext.addEventListener('click',()=>{ click3d(); if(qIndex<QUIZ.length-1){ qIndex++; renderQuestion(); } else showSummary(); });
+
+function showSummary(){
+  qProgressEl.style.display='none';
+  qIllusEl.style.display='none'; qIllusEl.innerHTML='';
+  qBodyEl.innerHTML='';
+  qFeedbackEl.className='q-feedback'; qFeedbackEl.textContent='';
+  qTextEl.className='q-text summary'; qTextEl.textContent=SUMMARY_TEXT;
+  btnNext.style.display='none'; btnStage3.style.display='';
+  winSound(); fireConfetti();
+}
+
+/* כפתור סיום השאלון — מעבר לשלב 3 (ליקוט בילקוט) */
+btnStage3.addEventListener('click',()=>{ click3d(); startStage3(); });
+
+/* =========================================================
+   שלב 3 — "ליקוט בילקוט" (משחק תפיסה)
+   ⚙ כוונון מהיר — שנו את הערכים כאן:
+   ========================================================= */
+const S3 = {
+  FALL_SPEED: 145,   // מהירות נפילה (px לשנייה). גדול יותר = מהיר/קשה יותר.
+  SPAWN_MS:   1150,  // מרווח בין הופעות היגדים (מילי-שניות). קטן יותר = צפוף/קשה יותר.
+  MAX_ON:     3,     // מקסימום היגדים על המסך במקביל.
+  HIT:  +10,         // ניקוד על תפיסת היגד נכון.
+  MISS: -5,          // ניקוד על תפיסת היגד שגוי (הניקוד לא יורד מתחת ל-0).
+  BAG_SPEED: 640,    // מהירות הזזת הילקוט בחצי המקלדת (px לשנייה).
+  CATCH_W:  .62,     // רוחב יחסי לתפיסה (חפיפה אופקית בין הילקוט להיגד). גדול יותר = קל יותר.
+  WIN_AT:   90       // ניקוד מינימלי להודעת "כל הכבוד" (מתוך 150).
+};
+
+const S3_GROUPS = [
+  { title:'אילו סוגי למידה יהיו ב-720?',
+    good:[ 'מתקדמים בקצב אישי בחלק מהזמן','אפשר לקבל משימות מותאמות','חלק מהלמידה עצמאית וחלק משותפת','לומדים גם לבד וגם יחד, גם במחשב וגם מחוצה לו','המערכת הדיגיטלית עוזרת לראות מה הצלחתי ומה לחזק' ],
+    bad: [ 'כל התלמידים לומדים תמיד אותו דבר באותו זמן','אסור לבקש עזרה אף פעם','אין שימוש במחשב בכלל','המורה מחליטה הכול והתלמיד לא בוחר דבר' ] },
+  { title:'אחריות חדשה של תלמידים',
+    good:[ 'להגיע מוכנים','לנהל זמן','לבקש עזרה כשצריך, אחרי שניסיתי לבד','להתמיד גם כשקשה','לעקוב אחרי ההתקדמות האישית' ],
+    bad: [ 'לחכות שהמורה תעשה הכול בשבילי','לוותר ברגע שקשה','להעתיק מחבר במקום לנסות','לא לעקוב אחרי כלום' ] },
+  { title:'תפקיד המורה ב-720',
+    good:[ 'מלווה','מסייעת','בודקת התקדמות','מקיימת שיחות אישיות','עוזרת להציב מטרות' ],
+    bad: [ 'רק מרצה מקדימה ולא עוזרת לאיש','נותנת ציונים בלי לעזור','לא מתעניינת בהתקדמות התלמידים' ] }
+];
+
+const stage3El = document.getElementById('stage3');
+const s3Field  = document.getElementById('s3Field');
+const s3Bag    = document.getElementById('s3Bag');
+const s3TitleEl= document.getElementById('s3Title');
+const s3ScoreEl= document.getElementById('s3Score');
+const s3Flash  = document.getElementById('s3Flash');
+const s3Banner = document.getElementById('s3Banner');
+const stage3End= document.getElementById('stage3End');
+const s3EndMsg = document.getElementById('s3EndMsg');
+const s3EndScore=document.getElementById('s3EndScore');
+const btnS3Again=document.getElementById('btnS3Again');
+let s3 = null;
+
+function startStage3(){
+  postJourney({type:'stage', n:4, title:'איסוף ההיגדים'});
+  quizEl.classList.remove('show'); hideWin(); stage3End.classList.remove('show');
+  document.querySelector('.game').style.display='none';   // מסתירים את לוח שלב 1 מאחור
+  s3Field.innerHTML='';
+  s3 = { group:-1, score:0, queue:[], items:[], correctLeft:0,
+         bagX:innerWidth/2, bagTarget:innerWidth/2, keyL:false, keyR:false,
+         spawnAcc:0, last:0, paused:true, advancing:false, raf:0, bannerTimer:0,
+         bagW:90, bagH:90, bagTopY:innerHeight-90 };
+  stage3El.classList.add('show');
+  positionBag(); requestAnimationFrame(sizeBag);
+  updateScore();
+  startGroup(0);
+  addEventListener('pointermove', s3Mouse);
+  addEventListener('keydown', s3Key); addEventListener('keyup', s3KeyUp);
+  s3.raf = requestAnimationFrame(s3Tick);
+}
+
+function startGroup(i){
+  const g=S3_GROUPS[i];
+  s3.group=i; s3.advancing=false; s3.spawnAcc=0; s3.paused=true;
+  s3TitleEl.textContent=g.title;
+  s3.queue = shuffled([ ...g.good.map(t=>({t,correct:true})), ...g.bad.map(t=>({t,correct:false})) ]);
+  s3.correctLeft = g.good.length;
+  s3Banner.innerHTML='<span>'+g.title+'<br><small style="font-size:.62em">🎒 תפסו בילקוט רק את הנכון</small></span>';
+  s3Banner.classList.add('show');
+  clearTimeout(s3.bannerTimer);
+  s3.bannerTimer=setTimeout(()=>{ if(s3){ s3Banner.classList.remove('show'); s3.paused=false; } }, 1300);
+}
+
+function advanceGroup(){
+  if(s3.advancing) return; s3.advancing=true; s3.paused=true;
+  s3.items.forEach(it=>it.el.remove()); s3.items=[];
+  if(s3.group+1 < S3_GROUPS.length) startGroup(s3.group+1);
+  else endStage3();
+}
+
+function spawnItem(data){
+  const el=document.createElement('div'); el.className='s3-item';
+  el.textContent=data.t;
+  el.style.background=COLORS[(Math.random()*COLORS.length)|0];
+  const margin=130;
+  const x=margin + Math.random()*Math.max(40, innerWidth-margin*2);
+  el.style.left=x+'px'; el.style.top='-90px';
+  s3Field.appendChild(el);
+  const r=el.getBoundingClientRect();
+  s3.items.push({ el, x, y:-(r.height+20), w:r.width, h:r.height, correct:data.correct, caught:false });
+}
+
+function catchItem(it, k){
+  it.caught=true; s3.items.splice(k,1);
+  if(it.correct){
+    s3.score += S3.HIT; s3.correctLeft--;
+    flashS3('green'); blip(680,.1,'triangle',.07); setTimeout(()=>blip(900,.1,'triangle',.06),70);
+  }else{
+    s3.score = Math.max(0, s3.score + S3.MISS);
+    flashS3('red'); blip(150,.22,'sawtooth',.06);
+  }
+  updateScore();
+  it.el.classList.add('caught');
+  setTimeout(()=>it.el.remove(), 230);
+}
+
+function flashS3(t){ s3Flash.classList.remove('green','red'); void s3Flash.offsetWidth; s3Flash.classList.add(t); }
+function updateScore(){ s3ScoreEl.textContent='⭐ ניקוד: '+s3.score; }
+function positionBag(){ s3Bag.style.left = s3.bagX+'px'; }
+function sizeBag(){ if(!s3) return; const r=s3Bag.getBoundingClientRect(); s3.bagW=r.width||90; s3.bagH=r.height||90; s3.bagTopY=r.top + r.height*0.12; }
+
+function s3Mouse(e){ if(s3) s3.bagTarget=e.clientX; }
+function s3Key(e){ if(!s3) return;
+  if(e.key==='ArrowLeft'||e.key==='Left'){ s3.keyL=true; e.preventDefault(); }
+  else if(e.key==='ArrowRight'||e.key==='Right'){ s3.keyR=true; e.preventDefault(); } }
+function s3KeyUp(e){ if(!s3) return;
+  if(e.key==='ArrowLeft'||e.key==='Left') s3.keyL=false;
+  else if(e.key==='ArrowRight'||e.key==='Right') s3.keyR=false; }
+
+function s3Tick(ts){
+  if(!s3) return;
+  if(!s3.last) s3.last=ts;
+  let dt=(ts-s3.last)/1000; s3.last=ts; if(dt>0.06) dt=0.06;
+
+  // הופעת היגדים
+  if(!s3.paused && !s3.advancing){
+    s3.spawnAcc += dt*1000;
+    if(s3.spawnAcc>=S3.SPAWN_MS && s3.queue.length && s3.items.length<S3.MAX_ON){ s3.spawnAcc=0; spawnItem(s3.queue.shift()); }
+  }
+  // תנועת הילקוט (עכבר מגדיר יעד; מקלדת מזיזה את היעד)
+  if(s3.keyL) s3.bagTarget -= S3.BAG_SPEED*dt;
+  if(s3.keyR) s3.bagTarget += S3.BAG_SPEED*dt;
+  const half=s3.bagW/2;
+  s3.bagTarget = Math.max(half, Math.min(innerWidth-half, s3.bagTarget));
+  s3.bagX += (s3.bagTarget - s3.bagX) * Math.min(1, dt*20);
+  positionBag();
+
+  // נפילה + תפיסה
+  for(let k=s3.items.length-1;k>=0;k--){
+    const it=s3.items[k];
+    it.y += S3.FALL_SPEED*dt; it.el.style.top=it.y+'px';
+    const bottom=it.y+it.h;
+    if(!it.caught && bottom>=s3.bagTopY && it.y<=s3.bagTopY+s3.bagH && Math.abs(it.x-s3.bagX) < (half+it.w/2)*S3.CATCH_W){
+      catchItem(it,k); continue;
+    }
+    if(it.y > innerHeight+30){ it.el.remove(); s3.items.splice(k,1); }   // נפל לרצפה — נעלם בלי עונש
+  }
+
+  // מעבר לקבוצה הבאה (advanceGroup עלול לסיים את השלב ולאפס s3)
+  if(!s3.advancing && !s3.paused && (s3.correctLeft<=0 || (s3.queue.length===0 && s3.items.length===0))) advanceGroup();
+
+  if(s3) s3.raf = requestAnimationFrame(s3Tick);   // ייתכן ש-s3=null אם השלב הסתיים זה עתה
+}
+
+function endStage3(){
+  const finalScore = s3.score;
+  cancelAnimationFrame(s3.raf); clearTimeout(s3.bannerTimer);
+  removeEventListener('pointermove', s3Mouse); removeEventListener('keydown', s3Key); removeEventListener('keyup', s3KeyUp);
+  s3.items.forEach(it=>it.el.remove());
+  s3Banner.classList.remove('show');
+  stage3El.classList.remove('show');
+  // במסע: מדווחים למארח שהשלב האחרון הסתיים, והמארח מציג את מסך הסיום הכולל
+  if(isEmbed()){ winSound(); postJourney({type:'done', score:finalScore}); s3=null; return; }
+  const max = S3_GROUPS.reduce((s,g)=>s+g.good.length,0) * S3.HIT;   // 15 × 10 = 150
+  s3EndScore.textContent='הניקוד שלך: '+finalScore+' מתוך '+max;
+  s3EndMsg.textContent = finalScore>=S3.WIN_AT ? '🎉 כל הכבוד! ליקטת נהדר!' : 'יפה שניסית! 💪 אפשר תמיד לשחק שוב וללקט עוד.';
+  stage3End.classList.add('show');
+  winSound(); if(finalScore>=S3.WIN_AT) fireConfetti();
+  s3=null;
+}
+addEventListener('resize', ()=>{ if(s3) sizeBag(); });
+
+/* "שחק שוב" — חזרה לשלב 1 (פעיל במצב עצמאי; במסע המארח מטפל בכך) */
+btnS3Again.addEventListener('click',()=>{
+  click3d();
+  stage3End.classList.remove('show'); stage3El.classList.remove('show');
+  quizEl.classList.remove('show'); hideWin();
+  document.querySelector('.game').style.display='';
+  newGame();
+});
+
+/* ---------- חיבור למסע 4 השלבים (פעיל רק כשהמשחק רץ בתוך iframe של המארח) ---------- */
+function isEmbed(){ return window.self !== window.top; }
+function postJourney(m){ if(isEmbed()){ try{ parent.postMessage(m,'*'); }catch(e){} } }
+window.addEventListener('load', ()=> postJourney({type:'stage', n:2, title:'סדר השיעור המותאם'}));
+
+/* ---------- מסך מלא ---------- */
+/* כפתור מסך-המלא היחיד מנוהל ע"י המעטפת (index.html) שרצה בחלון העליון —
+   רק לחלון העליון יש הרשאת fullscreen. הכפתור הפנימי (שלא עבד בתוך ה-iframe) הוסר כדי למנוע כפילות. */
+
+/* ======================= נתיב מקשר (SVG, עקומה חלקה דרך מרכזי המשבצות) ======================= */
+function drawRoad(){
+  const box=timelineEl.getBoundingClientRect();
+  if(!box.width) return;
+  roadSvg.setAttribute('viewBox','0 0 '+box.width+' '+box.height);
+  const p=[];
+  for(let i=0;i<N;i++){
+    if(!slotEls[i]) continue;
+    const r=slotEls[i].getBoundingClientRect();
+    p.push([r.left-box.left+r.width/2, r.top-box.top+r.height/2 + 6]);
+  }
+  if(p.length<2){ roadSvg.innerHTML=''; return; }
+  let d='M '+p[0][0].toFixed(1)+' '+p[0][1].toFixed(1);
+  for(let i=0;i<p.length-1;i++){
+    const p0=p[i-1]||p[i], p1=p[i], p2=p[i+1], p3=p[i+2]||p[i+1];
+    const c1x=p1[0]+(p2[0]-p0[0])/6, c1y=p1[1]+(p2[1]-p0[1])/6;
+    const c2x=p2[0]-(p3[0]-p1[0])/6, c2y=p2[1]-(p3[1]-p1[1])/6;
+    d+=' C '+c1x.toFixed(1)+' '+c1y.toFixed(1)+' '+c2x.toFixed(1)+' '+c2y.toFixed(1)+' '+p2[0].toFixed(1)+' '+p2[1].toFixed(1);
+  }
+  roadSvg.innerHTML=
+    '<path d="'+d+'" fill="none" stroke="rgba(58,30,10,.55)" stroke-width="30" stroke-linecap="round" stroke-linejoin="round"/>'+
+    '<path d="'+d+'" fill="none" stroke="#7b2ff7" stroke-width="16" stroke-linecap="round" stroke-linejoin="round"/>'+
+    '<path d="'+d+'" fill="none" stroke="#ffc233" stroke-width="4.5" stroke-dasharray="2 16" stroke-linecap="round"/>';
+}
+let rt=null;
+addEventListener('resize',()=>{ clearTimeout(rt); rt=setTimeout(drawRoad,120); sizeFx(); });
+
+/* ======================= סאונד (Web Audio) ======================= */
+let actx=null;
+function audio(){ if(!actx){ try{actx=new (window.AudioContext||window.webkitAudioContext)();}catch(e){} } if(actx&&actx.state==='suspended') actx.resume(); return actx; }
+function blip(freq=600,dur=.08,type='square',gain=.06){
+  const c=audio(); if(!c) return;
+  const o=c.createOscillator(), g=c.createGain();
+  o.type=type; o.frequency.value=freq; o.connect(g); g.connect(c.destination);
+  const t=c.currentTime; g.gain.setValueAtTime(gain,t); g.gain.exponentialRampToValueAtTime(.0001,t+dur);
+  o.start(t); o.stop(t+dur);
+}
+const click3d  =()=>blip(300,.06,'square',.06);
+const dropSound=()=>blip(380,.1,'sine',.07);
+function winSound(){ [523,659,784,1047].forEach((f,i)=>setTimeout(()=>blip(f,.18,'triangle',.08), i*120)); }
+
+/* ======================= חלקיקים / קונפטי ======================= */
+const fx=document.getElementById('fx'), fctx=fx.getContext('2d');
+let parts=[], fxAnim=null;
+function sizeFx(){ fx.width=innerWidth; fx.height=innerHeight; }
+sizeFx();
+const COLORS=['#ff7a18','#ffc233','#ff3d77','#7b2ff7','#1f8fff','#22c55e','#ff3b3b'];
+function emit(x,y,count,spread,power){
+  for(let i=0;i<count;i++){
+    const a=Math.random()*Math.PI*2, sp=Math.random()*power;
+    parts.push({ x,y, vx:Math.cos(a)*sp*spread, vy:Math.sin(a)*sp - power*.4,
+      g:.35+Math.random()*.2, s:5+Math.random()*7, rot:Math.random()*6.28, vr:(Math.random()-.5)*.4,
+      c:COLORS[(Math.random()*COLORS.length)|0], life:0, max:70+Math.random()*50 });
+  }
+  if(!fxAnim) fxAnim=requestAnimationFrame(tickFx);
+}
+function landingBurst(pad){ const r=pad.getBoundingClientRect(); emit(r.left+r.width/2, r.top+r.height/2, 26, 1, 9); }
+function fireConfetti(){ emit(innerWidth/2, innerHeight/2, 240, 1.6, 18); }
+function tickFx(){
+  fctx.clearRect(0,0,fx.width,fx.height);
+  parts=parts.filter(p=>p.life<p.max);
+  parts.forEach(p=>{ p.life++; p.vy+=p.g; p.x+=p.vx; p.y+=p.vy; p.vx*=.99; p.rot+=p.vr;
+    fctx.save(); fctx.translate(p.x,p.y); fctx.rotate(p.rot);
+    fctx.globalAlpha=Math.max(0,1-p.life/p.max); fctx.fillStyle=p.c;
+    fctx.fillRect(-p.s/2,-p.s/2,p.s,p.s*.6); fctx.restore(); });
+  if(parts.length) fxAnim=requestAnimationFrame(tickFx);
+  else{ fctx.clearRect(0,0,fx.width,fx.height); fxAnim=null; }
+}
+
+/* ---------- התחלה ---------- */
+buildTimeline();
+newGame();
+window.addEventListener('load', ()=>{ requestAnimationFrame(drawRoad); if(isEmbed()) setTimeout(()=>toast('💡 לחוויה הטובה ביותר — לחצו על ⛶ שלמעלה למסך מלא'), 800); });
+</script>
+</body>
+</html>
