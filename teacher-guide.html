@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>דף הנחיה למורים — איך לומדים בתוכנית 720?</title>
+<link rel="icon" href="favicon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;700;900&display=swap" rel="stylesheet">
+<style>
+:root{--ink:#2c174c;--muted:#685c77;--paper:#fffdf7;--purple:#6b3fad;--dark:#3a1e63;--gold:#f5bd3f;--line:#e7ddcf;--shadow:0 16px 45px rgba(44,23,76,.18)}
+*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;color:var(--ink);font-family:'Rubik',system-ui,sans-serif;background:#d8c1e9;background-image:linear-gradient(rgba(71,35,105,.38),rgba(71,35,105,.18)),url("images/רקע מעודכן.png");background-size:cover;background-position:center;background-attachment:fixed}
+.topbar{position:sticky;top:0;z-index:10;display:flex;justify-content:space-between;align-items:center;gap:14px;padding:10px max(18px,calc((100vw - 980px)/2));background:rgba(42,19,78,.94);border-bottom:3px solid var(--gold);box-shadow:0 4px 16px rgba(0,0,0,.25)}
+.topbar-title{color:#fff6df;font-weight:900}.actions{display:flex;gap:8px}.action{border:1px solid rgba(255,255,255,.28);border-radius:9px;padding:8px 12px;color:#fff;background:rgba(255,255,255,.1);font:700 .86rem 'Rubik';text-decoration:none;cursor:pointer}.action:hover{background:rgba(255,255,255,.2)}
+main{width:min(980px,calc(100% - 28px));margin:28px auto 46px}.hero{position:relative;overflow:hidden;padding:38px 44px;border-radius:24px;color:#fff;background:linear-gradient(135deg,var(--dark),var(--purple) 68%,#8862bd);box-shadow:var(--shadow)}.hero:after{content:"720";position:absolute;direction:ltr;left:-18px;bottom:-48px;font-size:9rem;font-weight:900;color:rgba(255,255,255,.06);transform:rotate(-7deg)}
+.eyebrow{color:#ffe18a;font-size:.9rem;font-weight:900}h1{margin:8px 0 10px;font-size:clamp(2rem,5vw,3.35rem);line-height:1.05}.hero p{max-width:700px;margin:0;font-size:1.08rem;line-height:1.75;color:#f5effd}.meta{display:flex;flex-wrap:wrap;gap:9px;margin-top:20px}.pill{padding:7px 12px;border-radius:99px;background:rgba(255,255,255,.12);font-size:.86rem;font-weight:700}
+.section{margin-top:20px;padding:28px 32px;border-radius:20px;background:var(--paper);box-shadow:var(--shadow)}.section-head{display:flex;align-items:center;gap:13px;margin-bottom:18px}.num{flex:0 0 42px;height:42px;display:grid;place-items:center;border-radius:12px;color:#fff;background:var(--purple);font-size:1.15rem;font-weight:900}h2{margin:0;font-size:1.45rem}.time{margin-inline-start:auto;color:var(--muted);font-size:.87rem;font-weight:700;white-space:nowrap}
+.read-aloud{position:relative;margin:0;padding:22px 24px 22px 58px;border-radius:14px;background:#f3ecfb;border-right:5px solid var(--purple);font-size:1.08rem;font-weight:500;line-height:1.85}.read-aloud:before{content:"❞";position:absolute;left:18px;top:8px;color:#b79ad8;font:700 3rem Georgia}.label{display:block;margin-bottom:5px;color:var(--purple);font-size:.82rem;font-weight:900}.note,.intro{color:var(--muted);line-height:1.65}.principles,.tips{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:18px}.principle,.tip{padding:14px;border-radius:12px;background:#fff8e5;border:1px solid #f0dfb2}.principle{text-align:center}.principle strong,.tip strong{display:block;margin-bottom:4px;color:#7d5513}
+.stage-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}.stage{padding:19px 20px;border-radius:15px;background:#fff;border:1px solid var(--line);border-top:5px solid #e77a2c;break-inside:avoid}.stage:nth-child(2){border-top-color:#3f9b61}.stage:nth-child(3){border-top-color:#3f83bd}.stage:nth-child(4){border-top-color:var(--gold)}.stage h3{margin:0 0 9px;font-size:1.03rem}ul{margin:0;padding:0 20px 0 0}li{margin:7px 0;line-height:1.55}
+.bridge{margin-top:16px;padding:22px;border-radius:15px;color:#fff;background:linear-gradient(135deg,#335d71,#3f83bd)}.bridge h3{margin:0 0 10px}.bridge ul{columns:2;column-gap:36px}.bridge li{break-inside:avoid}.close-line{margin:18px 0 0;padding:17px 20px;border-radius:12px;text-align:center;background:#fff8e5;border:1px solid #efd48a;font-weight:700;line-height:1.7}.tip{background:#f8f5fb;border-color:#e5dced}.tip strong{color:var(--purple)}footer{padding:6px 0 26px;color:#fff;text-align:center;font-size:.85rem;text-shadow:0 1px 2px #2c174c}
+@media(max-width:680px){.topbar{padding:9px 12px}.topbar-title{display:none}.actions{width:100%;justify-content:space-between}main{margin-top:14px}.hero,.section{padding:24px 20px;border-radius:16px}.principles,.stage-grid,.tips{grid-template-columns:1fr}.bridge ul{columns:1}.section-head{align-items:flex-start}.time{font-size:.76rem}.read-aloud{padding:18px}.read-aloud:before{display:none}}
+@media print{@page{size:A4;margin:13mm}body{background:#fff;color:#111;font-size:10.5pt}.topbar,footer{display:none}main{width:100%;margin:0}.hero{padding:20px 24px;box-shadow:none;border-radius:12px;background:#4c2a73!important;print-color-adjust:exact;-webkit-print-color-adjust:exact}.section{margin-top:10px;padding:17px 20px;box-shadow:none;border:1px solid #ccc;border-radius:11px;break-inside:avoid}.section-head{margin-bottom:10px}.read-aloud{padding:14px 17px;line-height:1.55}.read-aloud:before{display:none}.stage{padding:12px 14px}li{margin:4px 0;line-height:1.35}.bridge{padding:14px 17px;background:#eaf3f7!important;color:#111;border:1px solid #9cbcca}.close-line{margin-top:10px;padding:11px}}
+</style>
+</head>
+<body>
+<nav class="topbar" aria-label="פעולות"><span class="topbar-title">דף הנחיה למורים</span><div class="actions"><a class="action" href="index.html">→ חזרה למשחק</a><button class="action" type="button" onclick="window.print()">🖨 הדפסה / שמירה כ־PDF</button></div></nav>
+<main>
+  <header class="hero"><div class="eyebrow">ליווי פדגוגי למשחק</div><h1>איך לומדים בתוכנית 720?</h1><p>הצעה קצרה לפתיחת הפעילות ולשיחה שאחריה. המטרה היא לאפשר לתלמידים להתנסות באופן טבעי, ואז להפוך את חוויית המשחק לתובנות על למידה, בחירה ואחריות ב־720.</p><div class="meta"><span class="pill">⏱ כ־10–15 דקות לשיחה</span><span class="pill">💬 שיח כיתתי פתוח</span><span class="pill">🎯 אין תשובה אישית נכונה</span></div></header>
+  <section class="section"><div class="section-head"><div class="num">1</div><h2>לפני המשחק: פתיחה קצרה</h2><span class="time">2–3 דקות</span></div>
+    <blockquote class="read-aloud"><span class="label">נוסח מוצע להקראה</span>בעוד רגע נשחק במשחק קצר על האופן שבו לומדים בתוכנית 720. שחקו וענו באופן טבעי, לפי מה שנראה לכם נכון ומתאים לכם. אין צורך לנסות לנחש מה אנחנו רוצים לשמוע, ובשאלות שעוסקות בהעדפה אישית אין תשובה נכונה או לא נכונה. שימו לב למה שאתם חושבים, בוחרים ומרגישים לאורך השלבים — בסוף נחזור לזה יחד.</blockquote>
+    <div class="principles"><div class="principle"><strong>לא להסביר מראש</strong>תנו לחוויה לעורר את השאלות.</div><div class="principle"><strong>לא לכוון לתשובה</strong>עודדו בחירה כנה ואינטואיטיבית.</div><div class="principle"><strong>כן לשים לב</strong>לבחירות, להתלבטויות ולתגובות.</div></div>
+    <p class="note"><strong>למורה:</strong> בזמן המשחק מומלץ להימנע מתיקון פרשנויות אישיות. אפשר לעזור בהוראות ההפעלה, אך לשמור את השיחה על משמעות הבחירות לרפלקציה.</p>
+  </section>
+  <section class="section"><div class="section-head"><div class="num">2</div><h2>אחרי המשחק: רפלקציה</h2><span class="time">8–12 דקות</span></div><p class="intro">אין צורך לשאול את כל השאלות. בחרו שאלה אחת מכל שלב, ולאחר מכן עברו לשאלות החיבור ל־720. בקשו דוגמאות מהמשחק והזמינו כמה קולות שונים בכיתה.</p>
+    <div class="stage-grid">
+      <article class="stage"><h3>⏰ שלב 1 — סדר השיעור הרגיל</h3><ul><li>מה עזר לכם לדעת מה אמור לבוא לפני ומה אחרי?</li><li>איזה חלק בסדר השיעור הרגיש לכם מוכר במיוחד?</li><li>איפה נמצאת האחריות של התלמיד בשיעור כזה?</li></ul></article>
+      <article class="stage"><h3>🧩 שלב 2 — סדר השיעור המותאם</h3><ul><li>מה השתנה בתפקיד של התלמיד לעומת השיעור הראשון?</li><li>מה השתנה בתפקיד המורה?</li><li>איזה רגע בסדר החדש יכול לעזור לכם ללמוד טוב יותר? מה עלול להיות מאתגר?</li></ul></article>
+      <article class="stage"><h3>❓ שלב 3 — השאלון</h3><ul><li>איזו שאלה גרמה לכם לעצור ולחשוב?</li><li>מתי מתאים לכם ללמוד לבד, ומתי יחד עם אחרים?</li><li>מה עוזר לכם לקחת אחריות על הלמידה כשאתם נתקעים?</li></ul></article>
+      <article class="stage"><h3>🎯 שלב 4 — איסוף ההיגדים</h3><ul><li>אילו היגדים היה קל לזהות כשייכים ל־720, ואילו פחות?</li><li>איזו אחריות חדשה של תלמידים בלטה לכם?</li><li>מה למדתם מהשלב על הדרך שבה המורה תלווה אתכם?</li></ul></article>
+    </div>
+    <div class="bridge"><h3>מחברים את החוויה ללמידה ב־720</h3><ul><li>במילה אחת: איך הייתם רוצים להרגיש כלומדים ב־720?</li><li>איזו הזדמנות חדשה אתם מזהים בדרך הלמידה הזו?</li><li>מה יעזור לכם להצליח כשיש לכם יותר בחירה ואחריות?</li><li>איזו תמיכה תרצו לקבל מהמורה, מהקבוצה או מהמערכת?</li><li>מהו צעד קטן שכל אחד יכול לעשות כבר בשיעור הראשון?</li></ul></div>
+    <p class="close-line"><span class="label">משפט סיכום מוצע</span>ב־720 לא מצפים מכולם ללמוד תמיד באותה דרך. נלמד לזהות מה עוזר לנו, לבחור מתוך האפשרויות, לנסות, לבקש עזרה כשצריך ולקחת בהדרגה יותר אחריות על הלמידה שלנו.</p>
+  </section>
+  <section class="section"><div class="section-head"><div class="num">✓</div><h2>דגשים קטנים לשיחה טובה</h2></div><div class="tips"><div class="tip"><strong>התחילו מהחוויה</strong>שאלו קודם „מה קרה?” ו„איך הרגשתם?”, ורק אחר כך „מה זה אומר?”.</div><div class="tip"><strong>תנו מקום לשונות</strong>העדפה ללמידה לבד, יחד או בשילוב יכולה להשתנות לפי המשימה והזמן.</div><div class="tip"><strong>הפכו חשש לצורך</strong>אם עולה קושי, שאלו: „איזו תמיכה תעזור לכם להתמודד איתו?”.</div></div></section>
+</main>
+<footer>תוכנית 720 · דף ליווי למשחק „לומדים ללמוד אחרת”</footer>
+</body>
+</html>
