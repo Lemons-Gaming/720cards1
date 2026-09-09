@@ -600,7 +600,8 @@ function check(){
 }
 
 /* ---------- ניצחון ---------- */
-function showWin(){ const img=document.getElementById('winImg'); if(!img.src) img.src=imgPath(WIN_IMAGE); document.getElementById('win').classList.add('show'); }
+function showWin(){ const img=document.getElementById('winImg'); if(!img.src) img.src=imgPath(WIN_IMAGE); document.getElementById('win').classList.add('show');
+  reportSoloEnd('win'); }
 function hideWin(){ document.getElementById('win').classList.remove('show'); }
 
 /* ---------- הודעה צפה ---------- */
@@ -625,6 +626,21 @@ document.getElementById('win').addEventListener('click',e=>{ if(e.target.id==='w
 
 /* ---------- חיבור למסע 4 השלבים (פעיל רק כשהמשחק רץ בתוך iframe של המארח) ---------- */
 function isEmbed(){ return window.self !== window.top; }
+
+/* דיווח ל-GA רק כשהמשחק נפתח ישירות. במסע — המעטפת מדווחת. */
+let soloEndSent=false, soloT0=Date.now();
+function reportSoloEnd(outcome){
+  if(isEmbed() || soloEndSent) return;
+  soloEndSent=true;
+  if(typeof gtag==='function') gtag('event','game_end',{
+    game_name: window.GAME_NAME, outcome: outcome, cards: N,
+    time_played_seconds: Math.round((Date.now()-soloT0)/1000) });
+}
+addEventListener('load', ()=>{
+  if(!isEmbed() && typeof gtag==='function')
+    gtag('event','game_start',{ game_name: window.GAME_NAME });
+});
+addEventListener('pagehide', ()=>reportSoloEnd('quit'));
 function postJourney(m){ if(isEmbed()){ try{ parent.postMessage(m,'*'); }catch(e){} } }
 if(isEmbed()){
   document.getElementById('btnPlayAgain').style.display='none';   // במסע: ממשיכים, לא משחקים שוב

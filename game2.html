@@ -1334,6 +1334,7 @@ function endStage3(){
   // במסע: מדווחים למארח שהשלב האחרון הסתיים, והמארח מציג את מסך הסיום הכולל
   if(isEmbed()){ winSound(); postJourney({type:'done', score:finalScore}); s3=null; return; }
   const max = S3_GROUPS.reduce((s,g)=>s+g.good.length,0) * S3.HIT;   // 16 × 10 = 160
+  reportSoloEnd(finalScore>=S3.WIN_AT ? 'win' : 'lose', finalScore);
   s3EndScore.textContent='הניקוד שלך: '+finalScore+' מתוך '+max;
   s3EndMsg.textContent = finalScore>=S3.WIN_AT ? '🎉 כל הכבוד! ליקטת נהדר!' : 'יפה שניסית! 💪 אפשר תמיד לשחק שוב וללקט עוד.';
   stage3End.classList.add('show');
@@ -1353,6 +1354,23 @@ btnS3Again.addEventListener('click',()=>{
 
 /* ---------- חיבור למסע 4 השלבים (פעיל רק כשהמשחק רץ בתוך iframe של המארח) ---------- */
 function isEmbed(){ return window.self !== window.top; }
+
+/* דיווח ל-GA רק כשהמשחק נפתח ישירות. במסע — המעטפת מדווחת. */
+let soloEndSent=false, soloT0=Date.now();
+function reportSoloEnd(outcome, score){
+  if(isEmbed() || soloEndSent) return;
+  soloEndSent=true;
+  if(typeof gtag!=='function') return;
+  const params={ game_name: window.GAME_NAME, outcome: outcome,
+                 time_played_seconds: Math.round((Date.now()-soloT0)/1000) };
+  if(typeof score==='number') params.score=score;
+  gtag('event','game_end',params);
+}
+addEventListener('load', ()=>{
+  if(!isEmbed() && typeof gtag==='function')
+    gtag('event','game_start',{ game_name: window.GAME_NAME });
+});
+addEventListener('pagehide', ()=>reportSoloEnd('quit'));
 function postJourney(m){ if(isEmbed()){ try{ parent.postMessage(m,'*'); }catch(e){} } }
 window.addEventListener('load', ()=> postJourney({type:'stage', n:2, title:'סדר השיעור המותאם'}));
 

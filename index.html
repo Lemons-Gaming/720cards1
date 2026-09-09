@@ -320,6 +320,7 @@ function loadStage(src){
 
 /* התחלה */
 document.getElementById('btnStart').addEventListener('click', ()=>{
+  reportGameStart();
   blip(300,.06,'square',.06);
   fade.classList.add('on');
   setTimeout(()=>{
@@ -333,6 +334,7 @@ document.getElementById('btnStart').addEventListener('click', ()=>{
 
 /* שחק שוב — חזרה לשלב 1 */
 document.getElementById('btnRestart').addEventListener('click', ()=>{
+  reportGameStart();
   blip(300,.06,'square',.06);
   fade.classList.add('on');
   setTimeout(()=>{
@@ -344,8 +346,30 @@ document.getElementById('btnRestart').addEventListener('click', ()=>{
   }, FADE_MS);
 });
 
+/* ── דיווח ל-GA ──
+   המעטפת היא שמכירה את המסע כולו, ולכן היא שמדווחת game_start/game_end.
+   game1/game2 מדווחים בעצמם רק כשהם נפתחים ישירות ולא בתוך ה-iframe,
+   כדי שלא ייספר אותו מסע פעמיים. */
+let journeyActive=false, journeyEndSent=false, journeyT0=0;
+function reportGameStart(){
+  journeyActive=true; journeyEndSent=false; journeyT0=Date.now();
+  if(typeof gtag==='function') gtag('event','game_start',{ game_name: window.GAME_NAME });
+}
+function reportGameEnd(outcome, score){
+  if(!journeyActive || journeyEndSent) return;
+  journeyEndSent=true; journeyActive=false;
+  if(typeof gtag!=='function') return;
+  const params={ game_name: window.GAME_NAME, outcome: outcome,
+                 stage_reached: currentStage,
+                 time_played_seconds: Math.round((Date.now()-journeyT0)/1000) };
+  if(typeof score==='number') params.score=score;
+  gtag('event','game_end',params);
+}
+addEventListener('pagehide',()=>reportGameEnd('quit'));
+
 /* מסך סיום כולל */
 function showEnding(score){
+  reportGameEnd('win', typeof score==='number' ? score : undefined);
   fade.classList.add('on');
   setTimeout(()=>{
     frame.classList.remove('show'); frame.src='about:blank';
