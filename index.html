@@ -209,6 +209,14 @@
   }
   .htoast.show{ opacity:1; transform:translateX(-50%) translateY(0); }
 
+  /* ===================== קרדיט יוצר ===================== */
+  .credit{
+    font-family:'Rubik',sans-serif; font-weight:700; color:#fff5d8; opacity:.92;
+    font-size:clamp(.72rem,1.15vw,.95rem); letter-spacing:.2px; direction:rtl;
+    -webkit-text-stroke:.9px var(--wood-dark); paint-order:stroke fill;
+    text-shadow:0 1px 0 #2c1505, 0 2px 6px rgba(0,0,0,.5);
+  }
+
   #fx{ position:fixed; inset:0; pointer-events:none; z-index:90; }
 </style>
 </head>
@@ -232,6 +240,7 @@
     <div class="logo"><span class="logo-text">איך לומדים בתוכנית 720?</span></div>
     <div class="sub"><span id="subText"></span><span class="cursor" id="subCursor">|</span></div>
     <button class="btn3d btn-check" id="btnStart" style="font-size:1.4rem; padding:16px 44px">▶ התחל</button>
+    <div class="credit">© שלומי נויפלד</div>
   </div>
 
   <!-- מסך סיום כולל -->
@@ -239,6 +248,7 @@
     <div class="greet" id="endGreet">🎉 כל הכבוד! סיימת את כל מסע השיעור! 🎉</div>
     <div class="score-line" id="endScore"></div>
     <button class="btn3d btn-shuffle" id="btnRestart" style="font-size:1.25rem; padding:15px 40px">↺ שחק שוב מההתחלה</button>
+    <div class="credit">© שלומי נויפלד</div>
   </div>
 
   <canvas id="fx"></canvas>
